@@ -1,15 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const EASE = [0.22, 1, 0.36, 1] as [number, number, number, number];
-import { motion, AnimatePresence } from "framer-motion";
 
 const navLinks = [
   { label: "About", href: "#about" },
   { label: "Experience", href: "#experience" },
-  { label: "Work", href: "#case-studies" },
-  { label: "Skills", href: "#skills" },
+  { label: "Systems", href: "#case-studies" },
+  { label: "Stack", href: "#skills" },
 ];
 
 export default function Navigation() {
@@ -36,7 +36,7 @@ export default function Navigation() {
         transition={{ duration: 0.6, ease: EASE }}
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           scrolled
-            ? "bg-[#0a0a0a]/80 backdrop-blur-xl border-b border-white/[0.06]"
+            ? "bg-[#070709]/85 backdrop-blur-xl border-b border-white/[0.05]"
             : "bg-transparent"
         }`}
       >
@@ -45,8 +45,11 @@ export default function Navigation() {
             {/* Logo */}
             <a
               href="#"
-              className="font-display font-bold text-xl tracking-tight group"
-              onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+              className="font-display font-extrabold text-xl tracking-tight group"
+              onClick={(e) => {
+                e.preventDefault();
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
             >
               <span className="text-text-primary">AC</span>
               <span className="gradient-text">.</span>
@@ -58,14 +61,14 @@ export default function Navigation() {
                 <button
                   key={link.href}
                   onClick={() => handleNavClick(link.href)}
-                  className="px-4 py-2 text-sm text-text-secondary hover:text-text-primary transition-colors duration-200 rounded-lg hover:bg-white/[0.05]"
+                  className="px-4 py-2 text-sm font-mono text-text-secondary hover:text-text-primary transition-colors duration-200 rounded-lg hover:bg-white/[0.04]"
                 >
                   {link.label}
                 </button>
               ))}
               <a
                 href="mailto:hello@anthonycarl.com"
-                className="ml-2 px-4 py-2 text-sm font-medium rounded-lg border border-accent-purple/40 text-accent-purple hover:bg-accent-purple/10 hover:border-accent-purple/70 transition-all duration-200"
+                className="ml-2 px-4 py-2 text-xs font-mono font-medium rounded-lg border border-accent-purple/35 text-accent-purple hover:bg-accent-purple/10 hover:border-accent-purple/60 transition-all duration-200 tracking-wide uppercase"
               >
                 Let&apos;s Talk
               </a>
@@ -102,21 +105,21 @@ export default function Navigation() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.2 }}
-            className="fixed top-16 left-0 right-0 z-40 bg-[#0a0a0a]/95 backdrop-blur-xl border-b border-white/[0.06] md:hidden"
+            className="fixed top-16 left-0 right-0 z-40 bg-[#070709]/95 backdrop-blur-xl border-b border-white/[0.05] md:hidden"
           >
             <div className="section-container py-4 flex flex-col gap-1">
               {navLinks.map((link) => (
                 <button
                   key={link.href}
                   onClick={() => handleNavClick(link.href)}
-                  className="text-left px-4 py-3 text-sm text-text-secondary hover:text-text-primary hover:bg-white/[0.05] rounded-lg transition-colors"
+                  className="text-left px-4 py-3 text-sm font-mono text-text-secondary hover:text-text-primary hover:bg-white/[0.04] rounded-lg transition-colors"
                 >
                   {link.label}
                 </button>
               ))}
               <a
                 href="mailto:hello@anthonycarl.com"
-                className="mt-2 px-4 py-3 text-sm font-medium text-center rounded-lg border border-accent-purple/40 text-accent-purple"
+                className="mt-2 px-4 py-3 text-xs font-mono font-medium text-center rounded-lg border border-accent-purple/35 text-accent-purple uppercase tracking-wide"
                 onClick={() => setMenuOpen(false)}
               >
                 Let&apos;s Talk

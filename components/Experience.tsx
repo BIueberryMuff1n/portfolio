@@ -8,86 +8,53 @@ const EASE = [0.22, 1, 0.36, 1] as [number, number, number, number];
 const experiences = [
   {
     company: "Mile Marker Agency",
-    location: "New York, NY",
     role: "Analyst, Innovation & Strategy",
     period: "2025 – Present",
-    type: "Engineering",
-    bullets: [
-      "Built an automated email scheduler system connecting Funnel, Google Sheets, and Gmail to distribute performance reports to vendor partners and clients, eliminating manual sends entirely.",
-      "Automated deck generation and reporting templates via Google Slides and Sheets APIs, enabling faster delivery of weekly client presentations with zero repetitive formatting work.",
-      "Collaborated with media and analytics leads to document SOPs and establish automation workflows that improved visibility and reduced turnaround time across recurring reporting.",
-    ],
+    badge: "Engineering",
+    badgeColor: "#8b5cf6",
+    highlight: "Architected Atlas: 21-tool autonomous platform saving $300K+/month as sole engineer.",
   },
   {
     company: "Mile Marker Agency",
-    location: "New York, NY",
     role: "Assistant Media Planner",
     period: "2024 – 2025",
-    type: "Strategy",
-    bullets: [
-      "Orchestrated omnichannel media planning and execution across DOOH, TV, CTV, radio, print, social, search, and affiliate channels — supporting 5 active media plans with combined annual budgets exceeding $30M.",
-      "Managed 50+ monthly line items and invoices across multiple vendors and platforms, ensuring budget accuracy and reconciliation alignment between media plans and client documentation.",
-      "Delivered weekly status reports and monthly competitive analyses across multiple accounts, accelerating turnaround through automated reporting workflows.",
-      "Coordinated vendor communications and RFP support across display, programmatic, and partnership opportunities.",
-    ],
+    badge: "Strategy",
+    badgeColor: "#22d3ee",
+    highlight: "Managed $30M+ in annual budgets across 5 active media plans; built automated reporting infrastructure.",
   },
   {
     company: "Alteryx Inc",
-    location: "Irvine, CA",
     role: "Digital Marketing Associate",
     period: "2023 – 2024",
-    type: "Marketing",
-    bullets: [
-      "Managed multi-channel campaigns directly with the Sr. Director of Marketing — overperforming the tech industry by 52% in reach (with 53% smaller audience), 503% in audience growth rate, and 369% in engagement rate.",
-      "Created copy and graphics for hundreds of social posts using Hootsuite, Canva, and Google Analytics, maintaining a data-centric approach with weekly metrics reporting.",
-      "Coordinated digital marketing for the 22-person SparkED team, organizing and delegating projects via ASANA.",
-    ],
+    badge: "Marketing",
+    badgeColor: "#3b82f6",
+    highlight: "Overperformed tech industry by 503% in audience growth rate and 369% in engagement rate.",
   },
   {
     company: "Alteryx Inc",
-    location: "Irvine, CA",
     role: "Digital Marketing Intern",
     period: "2022",
-    type: "Marketing",
-    bullets: [
-      "Conducted a comprehensive audit of digital and social media presence, identifying key opportunities for brand enhancement.",
-      "Generated 80 pieces of content organized into a content repository and calendar with targeted channels and timelines.",
-      "Collaborated weekly with C-Suite executives (SVP, VP) to strategize and improve marketing initiatives.",
-    ],
+    badge: "Marketing",
+    badgeColor: "#3b82f6",
+    highlight: "Produced 80-piece content repository; collaborated weekly with C-Suite on marketing strategy.",
   },
   {
     company: "Mobileware Inc",
-    location: "Stony Brook, NY",
     role: "Marketing Intern",
     period: "2021 – 2022",
-    type: "Design",
-    bullets: [
-      "Designed user-friendly websites and apps using Figma, improving user experience for product initiatives.",
-      "Created 20+ engaging graphics and email campaigns, connecting with partners and clients.",
-      "Structured marketing goals and timelines using Notion, ensuring project milestones were met.",
-    ],
+    badge: "Design",
+    badgeColor: "#10b981",
+    highlight: "Designed user-friendly apps and websites in Figma; created 20+ email campaigns.",
   },
   {
     company: "Swift Living LLC",
-    location: "Stony Brook, NY",
     role: "Co-Founder, Head of Marketing & Growth",
     period: "2020",
-    type: "Founder",
-    bullets: [
-      "Entered the student rental market in the Stony Brook area, building a brand with over 6,000 users.",
-      "Managed 5+ properties generating over $13,000 in monthly revenue.",
-      "Approached problems with an open and creative mindset, solving through iteration and collaboration.",
-    ],
+    badge: "Founder",
+    badgeColor: "#f59e0b",
+    highlight: "Built a student rental brand with 6,000+ users; managed $13K+/month in property revenue.",
   },
 ];
-
-const typeColors: Record<string, string> = {
-  Engineering: "text-accent-purple border-accent-purple/30 bg-accent-purple/10",
-  Strategy: "text-accent-cyan border-accent-cyan/30 bg-accent-cyan/10",
-  Marketing: "text-accent-blue border-accent-blue/30 bg-accent-blue/10",
-  Design: "text-emerald-400 border-emerald-400/30 bg-emerald-400/10",
-  Founder: "text-amber-400 border-amber-400/30 bg-amber-400/10",
-};
 
 export default function Experience() {
   const ref = useRef(null);
@@ -98,93 +65,94 @@ export default function Experience() {
       <div
         className="glow-blob"
         style={{
-          width: 500,
-          height: 500,
-          background: "radial-gradient(circle, rgba(34,211,238,0.07) 0%, transparent 70%)",
-          top: "30%",
-          left: "-10%",
+          width: 450,
+          height: 450,
+          background: "radial-gradient(circle, rgba(34,211,238,0.06) 0%, transparent 70%)",
+          top: "20%",
+          left: "-8%",
           position: "absolute",
         }}
         aria-hidden="true"
       />
 
       <div className="section-container relative z-10" ref={ref}>
-        {/* Section label */}
         <motion.div
-          initial={{ opacity: 0, y: 24 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6 }}
-          className="flex items-center gap-3 mb-6"
+          className="section-label"
         >
-          <span className="text-accent-purple text-sm font-mono tracking-widest uppercase">02</span>
-          <div className="w-8 h-px bg-accent-purple/50" />
-          <span className="text-text-secondary text-sm uppercase tracking-widest">Experience</span>
+          <span className="section-label-num">02</span>
+          <div className="section-label-line" />
+          <span className="section-label-text">Experience</span>
         </motion.div>
 
         <motion.h2
           initial={{ opacity: 0, y: 24 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6, delay: 0.08 }}
-          className="font-display font-bold text-4xl md:text-5xl text-text-primary mb-16"
+          className="font-display font-bold text-4xl md:text-5xl text-text-primary mb-12"
         >
-          Professional{" "}
-          <span className="gradient-text">Timeline</span>
+          The path to{" "}
+          <span className="gradient-text">orchestration.</span>
         </motion.h2>
 
         {/* Timeline */}
         <div className="relative">
           {/* Vertical line */}
-          <div className="absolute left-[7px] md:left-[11px] top-0 bottom-0 w-px bg-gradient-to-b from-accent-purple/60 via-accent-cyan/30 to-transparent" />
+          <div className="absolute left-[9px] top-2 bottom-2 w-px bg-gradient-to-b from-accent-purple/50 via-accent-cyan/20 to-transparent" />
 
-          <div className="space-y-10">
+          <div className="space-y-6">
             {experiences.map((exp, i) => (
               <motion.div
                 key={`${exp.company}-${exp.role}`}
-                initial={{ opacity: 0, x: -24 }}
+                initial={{ opacity: 0, x: -20 }}
                 animate={inView ? { opacity: 1, x: 0 } : {}}
-                transition={{ duration: 0.6, delay: 0.1 + i * 0.09, ease: EASE }}
-                className="relative pl-8 md:pl-12"
+                transition={{ duration: 0.55, delay: 0.12 + i * 0.08, ease: EASE }}
+                className="relative pl-9"
               >
                 {/* Timeline dot */}
                 <div
-                  className="absolute left-0 top-[22px] w-[15px] h-[15px] md:w-[23px] md:h-[23px] rounded-full border-2 border-accent-purple/60 bg-background flex items-center justify-center"
+                  className="absolute left-0 top-4 w-[19px] h-[19px] rounded-full border border-white/10 bg-background flex items-center justify-center"
+                  style={{ borderColor: `${exp.badgeColor}44` }}
                 >
-                  <div className="w-1.5 h-1.5 md:w-2.5 md:h-2.5 rounded-full bg-gradient-accent" />
+                  <div
+                    className="w-[7px] h-[7px] rounded-full"
+                    style={{ background: exp.badgeColor }}
+                  />
                 </div>
 
-                {/* Card */}
-                <div className="glass-card glass-card-hover p-6 md:p-8">
-                  <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
-                    <div>
-                      <div className="flex items-center gap-3 flex-wrap mb-1">
-                        <h3 className="font-display font-semibold text-lg text-text-primary">
-                          {exp.role}
-                        </h3>
-                        <span
-                          className={`text-xs px-2.5 py-0.5 rounded-full border font-medium ${typeColors[exp.type] ?? ""}`}
-                        >
-                          {exp.type}
-                        </span>
-                      </div>
-                      <div className="text-text-secondary text-sm">
-                        <span className="font-medium text-accent-cyan/80">{exp.company}</span>
-                        <span className="text-text-muted mx-2">·</span>
-                        <span className="text-text-muted">{exp.location}</span>
-                      </div>
+                {/* Row */}
+                <div className="glass-card glass-card-hover px-5 py-4 flex flex-wrap items-start gap-x-4 gap-y-2">
+                  {/* Left: role + company */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 mb-0.5">
+                      <span className="font-display font-semibold text-base text-text-primary">
+                        {exp.role}
+                      </span>
+                      <span
+                        className="text-[10px] px-2 py-0.5 rounded-full font-mono border"
+                        style={{
+                          color: exp.badgeColor,
+                          borderColor: `${exp.badgeColor}40`,
+                          background: `${exp.badgeColor}10`,
+                        }}
+                      >
+                        {exp.badge}
+                      </span>
                     </div>
-                    <span className="text-text-muted text-sm font-mono whitespace-nowrap">
-                      {exp.period}
-                    </span>
+                    <div className="text-xs text-text-muted mb-1.5">
+                      <span style={{ color: `${exp.badgeColor}cc` }}>{exp.company}</span>
+                    </div>
+                    <p className="text-text-secondary text-xs leading-relaxed">
+                      {exp.highlight}
+                    </p>
                   </div>
 
-                  <ul className="space-y-2">
-                    {exp.bullets.map((bullet, j) => (
-                      <li key={j} className="flex gap-3 text-text-secondary text-sm leading-relaxed">
-                        <span className="text-accent-purple mt-1.5 flex-shrink-0">▸</span>
-                        <span>{bullet}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  {/* Right: period */}
+                  <span className="text-text-muted text-xs font-mono whitespace-nowrap pt-0.5">
+                    {exp.period}
+                  </span>
                 </div>
               </motion.div>
             ))}
@@ -193,21 +161,25 @@ export default function Experience() {
 
         {/* Education */}
         <motion.div
-          initial={{ opacity: 0, y: 24 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6, delay: 0.7 }}
-          className="mt-16 gradient-border p-6 md:p-8"
+          className="mt-10 gradient-border p-5 md:p-7"
         >
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <div className="text-text-muted text-xs uppercase tracking-widest mb-2">Education</div>
-              <h3 className="font-display font-semibold text-xl text-text-primary mb-1">
+              <div className="text-[10px] font-mono text-text-muted uppercase tracking-widest mb-2">
+                Education
+              </div>
+              <div className="font-display font-bold text-lg text-text-primary mb-0.5">
                 Stony Brook University
-              </h3>
-              <p className="text-text-secondary text-sm">
-                B.S. in Business Management — Specialization in Marketing
-              </p>
-              <p className="text-text-muted text-xs mt-1">W. Turner Founding D Scholarship</p>
+              </div>
+              <div className="text-text-secondary text-sm">
+                B.S. Business Management — Specialization in Marketing
+              </div>
+              <div className="text-text-muted text-xs mt-1 font-mono">
+                W. Turner Founding D Scholarship
+              </div>
             </div>
             <span className="text-text-muted font-mono text-sm">2020 – 2023</span>
           </div>

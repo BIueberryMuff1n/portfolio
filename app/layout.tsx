@@ -1,28 +1,36 @@
 import type { Metadata } from "next";
-import { Inter, Plus_Jakarta_Sans } from "next/font/google";
+import { Syne, IBM_Plex_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({
+const syne = Syne({
   subsets: ["latin"],
-  variable: "--font-inter",
-  display: "swap",
-});
-
-const plusJakarta = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  variable: "--font-plus-jakarta",
+  variable: "--font-syne",
   display: "swap",
   weight: ["400", "500", "600", "700", "800"],
 });
 
+const ibmPlexSans = IBM_Plex_Sans({
+  subsets: ["latin"],
+  variable: "--font-ibm-plex",
+  display: "swap",
+  weight: ["300", "400", "500", "600"],
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-jetbrains",
+  display: "swap",
+  weight: ["400", "500"],
+});
+
 export const metadata: Metadata = {
-  title: "Anthony Carl — Software Engineer & Innovation Strategist",
+  title: "Anthony Carl — AI Orchestrator & Systems Architect",
   description:
-    "Software engineer who builds systems that change how organizations work. Creator of Atlas — a 21-tool internal platform saving $300K+/month.",
+    "I build autonomous systems that compound in value. Creator of Atlas — a 21-tool AI platform saving $300K+/month at Mile Marker Agency.",
   openGraph: {
-    title: "Anthony Carl — Software Engineer & Innovation Strategist",
+    title: "Anthony Carl — AI Orchestrator & Systems Architect",
     description:
-      "Software engineer who builds systems that change how organizations work.",
+      "I build autonomous systems that compound in value. Multi-agent pipelines. Self-improving loops. Systems that think.",
     type: "website",
   },
 };
@@ -35,7 +43,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body
-        className={`${inter.variable} ${plusJakarta.variable} antialiased bg-background text-text-primary`}
+        className={`${syne.variable} ${ibmPlexSans.variable} ${jetbrainsMono.variable} antialiased bg-background text-text-primary`}
       >
         <div className="noise-overlay" aria-hidden="true" />
         {children}
