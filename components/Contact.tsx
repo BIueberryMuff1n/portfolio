@@ -10,7 +10,7 @@ export default function Contact() {
   const inView = useInView(ref, { once: true, margin: "-80px" });
 
   return (
-    <section id="contact" className="relative py-28 overflow-hidden">
+    <section id="contact" className="relative py-16 overflow-hidden">
       <div
         className="glow-blob animate-pulse-glow"
         style={{

@@ -54,7 +54,7 @@ export default function Demos() {
   const inView = useInView(ref, { once: true, margin: "-60px" });
 
   return (
-    <section id="demos" className="relative py-20 overflow-hidden">
+    <section id="demos" className="relative py-16 overflow-hidden">
       <div
         className="glow-blob"
         style={{

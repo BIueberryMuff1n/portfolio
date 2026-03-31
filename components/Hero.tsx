@@ -119,26 +119,17 @@ export default function Hero() {
           {...fadeUp(0.4)}
           className="flex flex-wrap items-center justify-center gap-4"
         >
-          <button
-            onClick={() =>
-              document.querySelector("#demos")?.scrollIntoView({ behavior: "smooth" })
-            }
+          <a
+            href="#demos"
             className="px-7 py-3.5 rounded-xl font-display font-semibold text-sm bg-gradient-accent text-white hover:opacity-90 transition-opacity duration-200 shadow-lg shadow-purple-500/25 tracking-wide"
           >
-            See the Systems →
-          </button>
+            See the Demos →
+          </a>
           <a
-            href="mailto:hello@anthonycarl.com"
+            href="#contact"
             className="px-7 py-3.5 rounded-xl font-display font-medium text-sm glass-card border border-white/10 text-text-secondary hover:text-text-primary hover:border-white/20 transition-all duration-200"
           >
             Let&apos;s Talk
-          </a>
-          <a
-            href="/Anthony_Carl_Resume.pdf"
-            download
-            className="px-7 py-3.5 rounded-xl font-display font-medium text-sm glass-card border border-white/10 text-text-secondary hover:text-text-primary hover:border-white/20 transition-all duration-200"
-          >
-            Resume ↓
           </a>
         </motion.div>
 

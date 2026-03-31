@@ -435,7 +435,7 @@ export default function CaseStudies() {
   const inView = useInView(ref, { once: true, margin: "-80px" });
 
   return (
-    <section id="case-studies" className="relative py-28 overflow-hidden">
+    <section id="case-studies" className="relative py-16 overflow-hidden">
       <div
         className="glow-blob"
         style={{
