@@ -23,15 +23,38 @@ const jetbrainsMono = JetBrains_Mono({
   weight: ["400", "500"],
 });
 
+const BASE_URL = "https://portfolio-production-6e88.up.railway.app";
+
 export const metadata: Metadata = {
-  title: "Anthony Carl — AI Orchestrator & Systems Architect",
+  metadataBase: new URL(BASE_URL),
+  title: {
+    default: "Anthony Carl — AI Orchestrator & Systems Architect",
+    template: "%s — Anthony Carl",
+  },
   description:
-    "I build autonomous systems that compound in value. Creator of Atlas — a 21-tool AI platform saving $300K+/month at Mile Marker Agency.",
+    "I build autonomous systems that compound in value. Creator of Atlas — a 21-tool AI platform saving $300K+/month at Mile Marker Agency. Available for AI systems architecture and multi-agent platform design.",
   openGraph: {
     title: "Anthony Carl — AI Orchestrator & Systems Architect",
     description:
       "I build autonomous systems that compound in value. Multi-agent pipelines. Self-improving loops. Systems that think.",
     type: "website",
+    url: BASE_URL,
+    siteName: "Anthony Carl Portfolio",
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "Anthony Carl — AI Orchestrator & Systems Architect",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Anthony Carl — AI Orchestrator & Systems Architect",
+    description:
+      "I build autonomous systems that compound in value. Creator of Atlas — a 21-tool AI platform saving $300K+/month.",
+    images: ["/opengraph-image"],
   },
 };
 

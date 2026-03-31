@@ -681,6 +681,7 @@ export default function AtlasPlatformPage() {
         { name: "Tailwind CSS" },
         { name: "Framer Motion" },
       ]}
+      demoHref="/demos/creative-matrix"
       prevStudy={undefined}
       nextStudy={{
         title: "Media Operations",

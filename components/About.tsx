@@ -86,8 +86,8 @@ export default function About() {
             <div className="space-y-4 text-text-secondary text-base leading-relaxed mb-8">
               <p>
                 Three years embedded inside a media agency. I built the automation layer —
-                from scratch, as the sole engineer — that now saves{" "}
-                <span className="text-text-primary font-medium">$300K+/month</span> in operational overhead.
+                from scratch, as the sole engineer — saving{" "}
+                <span className="text-text-primary font-medium">six figures monthly</span> in operational overhead.
               </p>
               <p>
                 My work isn&apos;t about writing functions. It&apos;s about designing systems where AI agents

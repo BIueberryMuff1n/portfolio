@@ -178,7 +178,7 @@ export default function Experience() {
                 B.S. Business Management — Specialization in Marketing
               </div>
               <div className="text-text-muted text-xs mt-1 font-mono">
-                W. Turner Founding D Scholarship
+                W. Turner Founding Dean&apos;s Scholarship
               </div>
             </div>
             <span className="text-text-muted font-mono text-sm">2020 – 2023</span>

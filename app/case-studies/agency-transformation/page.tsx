@@ -441,6 +441,7 @@ export default function AgencyTransformationPage() {
         { name: "Vertex AI" },
         { name: "Gemini Vision" },
       ]}
+      demoHref="/demos/creative-matrix"
       prevStudy={{
         title: "Media Operations",
         href: "/case-studies/media-operations",

@@ -96,7 +96,7 @@ export default function Contact() {
             initial={{ opacity: 0, y: 16 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.34, ease: EASE }}
-            className="flex items-center gap-6"
+            className="flex flex-wrap items-center gap-6"
           >
             <a
               href="https://github.com/BIueberryMuff1n"
@@ -109,6 +109,7 @@ export default function Contact() {
               </svg>
               GitHub
             </a>
+            {/* TODO: verify correct LinkedIn handle — /in/anthonyc appears too short */}
             <a
               href="https://linkedin.com/in/anthonyc"
               target="_blank"
@@ -121,6 +122,18 @@ export default function Contact() {
                 <circle cx="4" cy="4" r="2" />
               </svg>
               LinkedIn
+            </a>
+            <a
+              href="/Anthony_Carl_Resume.pdf"
+              download
+              className="flex items-center gap-2 text-text-muted hover:text-text-primary transition-colors duration-200 group text-sm font-mono"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="group-hover:text-accent-purple transition-colors duration-200">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              Resume
             </a>
           </motion.div>
         </div>

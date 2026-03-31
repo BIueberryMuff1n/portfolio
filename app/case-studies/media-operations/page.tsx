@@ -470,6 +470,7 @@ export default function MediaOperationsPage() {
         { name: "Firebase" },
         { name: "Firestore" },
       ]}
+      demoHref="/demos/ppc-auditor"
       prevStudy={{
         title: "Atlas Platform",
         href: "/case-studies/atlas-platform",

@@ -16,7 +16,7 @@ const config: Config = {
         "border-hover": "rgba(255,255,255,0.16)",
         "text-primary": "#f1f5f9",
         "text-secondary": "#94a3b8",
-        "text-muted": "#475569",
+        "text-muted": "#64748b",
         "accent-purple": "#8b5cf6",
         "accent-cyan": "#22d3ee",
         "accent-blue": "#3b82f6",

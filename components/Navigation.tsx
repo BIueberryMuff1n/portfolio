@@ -57,14 +57,14 @@ export default function Navigation() {
                 <button
                   key={link.href}
                   onClick={() => handleNavClick(link.href)}
-                  className="px-4 py-2 text-sm font-mono text-text-secondary hover:text-text-primary transition-colors duration-200 rounded-lg hover:bg-white/[0.04]"
+                  className="px-4 py-2 text-sm font-sans text-text-secondary hover:text-text-primary transition-colors duration-200 rounded-lg hover:bg-white/[0.04]"
                 >
                   {link.label}
                 </button>
               ))}
               <Link
                 href="/case-studies"
-                className="px-4 py-2 text-sm font-mono text-text-secondary hover:text-text-primary transition-colors duration-200 rounded-lg hover:bg-white/[0.04]"
+                className="px-4 py-2 text-sm font-sans text-text-secondary hover:text-text-primary transition-colors duration-200 rounded-lg hover:bg-white/[0.04]"
               >
                 Case Studies
               </Link>
@@ -74,6 +74,13 @@ export default function Navigation() {
               >
                 Live Demos
               </Link>
+              <a
+                href="/Anthony_Carl_Resume.pdf"
+                download
+                className="px-4 py-2 text-sm font-sans text-text-secondary hover:text-text-primary transition-colors duration-200 rounded-lg hover:bg-white/[0.04] flex items-center gap-1"
+              >
+                Resume ↓
+              </a>
               <a
                 href="mailto:hello@anthonycarl.com"
                 className="ml-2 px-4 py-2 text-xs font-mono font-medium rounded-lg border border-accent-purple/35 text-accent-purple hover:bg-accent-purple/10 hover:border-accent-purple/60 transition-all duration-200 tracking-wide uppercase"
@@ -120,7 +127,7 @@ export default function Navigation() {
                 <button
                   key={link.href}
                   onClick={() => handleNavClick(link.href)}
-                  className="text-left px-4 py-3 text-sm font-mono text-text-secondary hover:text-text-primary hover:bg-white/[0.04] rounded-lg transition-colors"
+                  className="text-left px-4 py-3 text-sm font-sans text-text-secondary hover:text-text-primary hover:bg-white/[0.04] rounded-lg transition-colors"
                 >
                   {link.label}
                 </button>
@@ -128,7 +135,7 @@ export default function Navigation() {
               <Link
                 href="/case-studies"
                 onClick={() => setMenuOpen(false)}
-                className="text-left px-4 py-3 text-sm font-mono text-text-secondary hover:text-text-primary hover:bg-white/[0.04] rounded-lg transition-colors"
+                className="text-left px-4 py-3 text-sm font-sans text-text-secondary hover:text-text-primary hover:bg-white/[0.04] rounded-lg transition-colors"
               >
                 Case Studies
               </Link>
@@ -139,6 +146,14 @@ export default function Navigation() {
               >
                 Live Demos
               </Link>
+              <a
+                href="/Anthony_Carl_Resume.pdf"
+                download
+                onClick={() => setMenuOpen(false)}
+                className="text-left px-4 py-3 text-sm font-sans text-text-secondary hover:text-text-primary hover:bg-white/[0.04] rounded-lg transition-colors"
+              >
+                Resume ↓
+              </a>
               <a
                 href="mailto:hello@anthonycarl.com"
                 className="mt-2 px-4 py-3 text-xs font-mono font-medium text-center rounded-lg border border-accent-purple/35 text-accent-purple uppercase tracking-wide"

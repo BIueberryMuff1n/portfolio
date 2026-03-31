@@ -84,7 +84,7 @@ export default function TerminalBlock() {
   };
 
   return (
-    <section className="relative py-14 overflow-hidden">
+    <section id="pipeline" className="relative py-28 overflow-hidden">
       <div
         className="glow-blob"
         style={{

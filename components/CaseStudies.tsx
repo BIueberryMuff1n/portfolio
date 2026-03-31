@@ -197,8 +197,8 @@ function TransformationDiagram() {
           ))}
         </div>
         <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between">
-          <span className="text-xs text-text-muted">Total impact:</span>
-          <span className="font-display font-bold text-sm gradient-text">$300K+ / month saved</span>
+          <span className="text-xs text-text-muted">Result:</span>
+          <span className="font-display font-bold text-sm text-text-primary">3-phase rollout · 1 engineer</span>
         </div>
       </div>
     </div>
@@ -227,7 +227,7 @@ const caseStudies = [
       "Print proofing (previously a multi-day manual process) now runs autonomously via Gemini Vision.",
     ],
     diagram: CreativeMatrixDiagram,
-    detail: "Architecture: Next.js 14 monorepo · Firebase/Firestore for state · BigQuery for analytics · Azure App Service for hosting · domain-driven module pattern with shared RBAC infrastructure.",
+    detail: "Architecture: Next.js 14 monorepo · Firebase/Firestore for real-time state · BigQuery for analytics · Azure App Service for hosting · domain-driven module pattern with shared RBAC infrastructure. The monorepo decision was driven by a single-engineer constraint — sharing auth and component logic across 9 modules without drift. The hardest problem was designing a human approval gate that couldn't be bypassed even under time pressure: every campaign touches a Firestore document that requires an explicit human write before the API activates it. If I rebuilt it today, I'd extract the agent orchestration into a dedicated service rather than running it inside the Next.js API routes — the coupling created deployment complexity as agent count grew.",
   },
   {
     id: "media-ops",
@@ -250,7 +250,7 @@ const caseStudies = [
       "Programmatic BigQuery infrastructure provides real-time oversight of $30M+ in annual campaign budgets.",
     ],
     diagram: MediaOpsDiagram,
-    detail: "Human-in-the-loop design was intentional: AI handles the deterministic work (pattern matching, taxonomy generation, QA checks); humans own the judgment calls.",
+    detail: "Human-in-the-loop design was intentional: AI handles the deterministic work (pattern matching, taxonomy generation, QA checks); humans own the judgment calls. The Gemini Vision proofing pipeline replaced a 2-day manual review with a sub-minute autonomous check — the constraint was that creative compliance requires contextual reasoning, not just regex, which ruled out rule-based validators. Using Google Sheets as the input surface was a deliberate tradeoff: it added validation complexity but eliminated adoption friction because the team already lived in Sheets. The lesson: meet users where they are before automating them to somewhere new.",
   },
   {
     id: "culture",
@@ -273,7 +273,7 @@ const caseStudies = [
       "The cultural shift is the lasting impact: when a new process emerges, the first question is now 'can we systematize this?'",
     ],
     diagram: TransformationDiagram,
-    detail: "Architecture was designed for a single developer maintaining enterprise-grade software: monorepo, domain modules, shared infrastructure. The constraint became a feature.",
+    detail: "Architecture was designed for a single developer maintaining enterprise-grade software: monorepo, domain modules, shared infrastructure. The constraint became a feature — not despite being one engineer, but because of it. Every module had to justify its existence and own its boundary cleanly; there was no team to absorb ambiguity. The cultural shift mattered as much as the technology: the rollout started with a taxonomy builder that gave teams a quick win, building the trust needed to introduce AI layers later. The hardest part wasn't the code — it was sequencing the rollout so that each phase made the next one feel inevitable rather than threatening.",
   },
 ];
 

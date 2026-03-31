@@ -37,6 +37,7 @@ interface CaseStudyLayoutProps {
   techStack: Array<{ name: string }>;
   prevStudy?: CaseStudyNavLink;
   nextStudy?: CaseStudyNavLink;
+  demoHref?: string;
 }
 
 // ── Scroll progress bar ───────────────────────────────────────────────────────
@@ -173,7 +174,7 @@ function TechStackSection({
 
 // ── CTA section ───────────────────────────────────────────────────────────────
 
-function CTASection() {
+function CTASection({ demoHref }: { demoHref?: string }) {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-60px" });
 
@@ -186,26 +187,35 @@ function CTASection() {
       className="py-20 border-t border-white/[0.05] text-center"
     >
       <p className="font-mono text-xs text-text-muted uppercase tracking-widest mb-4">
-        See it in action
+        Let&apos;s build
       </p>
       <h3 className="font-display font-bold text-3xl md:text-4xl text-text-primary mb-5">
-        Want to see it{" "}
-        <span className="gradient-text">live?</span>
+        Interested in what I can{" "}
+        <span className="gradient-text">build for your team?</span>
       </h3>
       <p className="text-text-secondary max-w-md mx-auto mb-8 text-sm leading-relaxed">
-        Interactive simulations of the Creative Matrix pipeline, Media Ops
-        command center, and ROI calculator — all client-side, no API costs.
+        Open to roles in AI systems architecture, multi-agent platform design,
+        and full-stack engineering where the goal is systems that scale.
       </p>
-      <Link
-        href="/#demos"
-        className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-mono text-sm font-medium text-white transition-all duration-200 hover:opacity-90 hover:scale-[1.02]"
-        style={{
-          background: "linear-gradient(135deg, #8b5cf6, #22d3ee)",
-        }}
-      >
-        View Interactive Demos
-        <span aria-hidden="true">→</span>
-      </Link>
+      <div className="flex flex-wrap items-center justify-center gap-4">
+        <a
+          href="mailto:hello@anthonycarl.com"
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-mono text-sm font-medium text-white transition-all duration-200 hover:opacity-90 hover:scale-[1.02]"
+          style={{
+            background: "linear-gradient(135deg, #8b5cf6, #22d3ee)",
+          }}
+        >
+          Let&apos;s Talk →
+        </a>
+        {demoHref && (
+          <Link
+            href={demoHref}
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-mono text-sm font-medium text-text-secondary glass-card border border-white/10 hover:text-text-primary hover:border-white/20 transition-all duration-200"
+          >
+            Try the Demo →
+          </Link>
+        )}
+      </div>
     </motion.div>
   );
 }
@@ -265,6 +275,7 @@ export default function CaseStudyLayout({
   techStack,
   prevStudy,
   nextStudy,
+  demoHref,
 }: CaseStudyLayoutProps) {
   const impactNum = String(sections.length + 1).padStart(2, "0");
   const techNum = String(sections.length + 2).padStart(2, "0");
@@ -416,7 +427,7 @@ export default function CaseStudyLayout({
 
         <ImpactSection impact={impact} sectionNum={impactNum} />
         <TechStackSection techStack={techStack} sectionNum={techNum} />
-        <CTASection />
+        <CTASection demoHref={demoHref} />
         <PrevNextNav prev={prevStudy} next={nextStudy} />
       </div>
     </>

@@ -104,7 +104,7 @@ export default function Hero() {
                 borderRight: i < 3 ? "1px solid rgba(255,255,255,0.07)" : undefined,
               }}
             >
-              <span className="font-display font-bold text-sm md:text-base gradient-text">
+              <span className="font-display font-bold text-sm md:text-base text-text-primary">
                 {m.value}
               </span>
               <span className="text-text-muted text-[10px] font-mono uppercase tracking-wider mt-0.5">
@@ -132,6 +132,13 @@ export default function Hero() {
             className="px-7 py-3.5 rounded-xl font-display font-medium text-sm glass-card border border-white/10 text-text-secondary hover:text-text-primary hover:border-white/20 transition-all duration-200"
           >
             Let&apos;s Talk
+          </a>
+          <a
+            href="/Anthony_Carl_Resume.pdf"
+            download
+            className="px-7 py-3.5 rounded-xl font-display font-medium text-sm glass-card border border-white/10 text-text-secondary hover:text-text-primary hover:border-white/20 transition-all duration-200"
+          >
+            Resume ↓
           </a>
         </motion.div>
 
