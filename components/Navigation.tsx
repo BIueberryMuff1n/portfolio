@@ -1,14 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const EASE = [0.22, 1, 0.36, 1] as [number, number, number, number];
 
-const navLinks = [
+const anchorLinks = [
   { label: "About", href: "#about" },
   { label: "Experience", href: "#experience" },
-  { label: "Systems", href: "#case-studies" },
   { label: "Stack", href: "#skills" },
 ];
 
@@ -44,12 +44,8 @@ export default function Navigation() {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <a
-              href="#"
+              href="/"
               className="font-display font-extrabold text-xl tracking-tight group"
-              onClick={(e) => {
-                e.preventDefault();
-                window.scrollTo({ top: 0, behavior: "smooth" });
-              }}
             >
               <span className="text-text-primary">AC</span>
               <span className="gradient-text">.</span>
@@ -57,7 +53,7 @@ export default function Navigation() {
 
             {/* Desktop links */}
             <div className="hidden md:flex items-center gap-1">
-              {navLinks.map((link) => (
+              {anchorLinks.map((link) => (
                 <button
                   key={link.href}
                   onClick={() => handleNavClick(link.href)}
@@ -66,6 +62,12 @@ export default function Navigation() {
                   {link.label}
                 </button>
               ))}
+              <Link
+                href="/case-studies"
+                className="px-4 py-2 text-sm font-mono text-text-secondary hover:text-text-primary transition-colors duration-200 rounded-lg hover:bg-white/[0.04]"
+              >
+                Case Studies
+              </Link>
               <a
                 href="mailto:hello@anthonycarl.com"
                 className="ml-2 px-4 py-2 text-xs font-mono font-medium rounded-lg border border-accent-purple/35 text-accent-purple hover:bg-accent-purple/10 hover:border-accent-purple/60 transition-all duration-200 tracking-wide uppercase"
@@ -108,7 +110,7 @@ export default function Navigation() {
             className="fixed top-16 left-0 right-0 z-40 bg-[#070709]/95 backdrop-blur-xl border-b border-white/[0.05] md:hidden"
           >
             <div className="section-container py-4 flex flex-col gap-1">
-              {navLinks.map((link) => (
+              {anchorLinks.map((link) => (
                 <button
                   key={link.href}
                   onClick={() => handleNavClick(link.href)}
@@ -117,6 +119,13 @@ export default function Navigation() {
                   {link.label}
                 </button>
               ))}
+              <Link
+                href="/case-studies"
+                onClick={() => setMenuOpen(false)}
+                className="text-left px-4 py-3 text-sm font-mono text-text-secondary hover:text-text-primary hover:bg-white/[0.04] rounded-lg transition-colors"
+              >
+                Case Studies
+              </Link>
               <a
                 href="mailto:hello@anthonycarl.com"
                 className="mt-2 px-4 py-3 text-xs font-mono font-medium text-center rounded-lg border border-accent-purple/35 text-accent-purple uppercase tracking-wide"

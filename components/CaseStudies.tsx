@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import { useRef, useState } from "react";
 
@@ -210,6 +211,7 @@ const caseStudies = [
     index: "01",
     title: "Atlas Platform",
     tagline: "21-tool autonomous platform. One engineer. Zero compromises.",
+    href: "/case-studies/atlas-platform",
     tags: ["Next.js 14", "Firebase", "BigQuery", "Azure", "Vertex AI", "Gemini Vision"],
     accentColor: "#8b5cf6",
     impact: [
@@ -231,6 +233,7 @@ const caseStudies = [
     index: "02",
     title: "Media Operations",
     tagline: "Multi-day manual workflows → real-time autonomous pipelines.",
+    href: "/case-studies/media-operations",
     tags: ["Python", "BigQuery", "Google Sheets API", "Gemini Vision", "Claude API"],
     accentColor: "#22d3ee",
     impact: [
@@ -252,6 +255,7 @@ const caseStudies = [
     index: "03",
     title: "Agency Transformation",
     tagline: "From manual-by-default to automated-by-default. One engineer did this.",
+    href: "/case-studies/agency-transformation",
     tags: ["Systems Architecture", "Change Management", "AI Integration", "Platform Design"],
     accentColor: "#3b82f6",
     impact: [
@@ -386,20 +390,29 @@ function CaseStudyCard({
               </span>
             ))}
           </div>
-          <button
-            onClick={() => setExpanded(!expanded)}
-            className="text-xs font-mono font-medium flex items-center gap-1.5 transition-colors duration-200"
-            style={{ color: study.accentColor }}
-          >
-            {expanded ? "Show less" : "Technical details"}
-            <motion.span
-              animate={{ rotate: expanded ? 180 : 0 }}
-              transition={{ duration: 0.2 }}
-              className="inline-block"
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setExpanded(!expanded)}
+              className="text-xs font-mono font-medium flex items-center gap-1.5 transition-colors duration-200"
+              style={{ color: study.accentColor }}
             >
-              ↓
-            </motion.span>
-          </button>
+              {expanded ? "Show less" : "Technical details"}
+              <motion.span
+                animate={{ rotate: expanded ? 180 : 0 }}
+                transition={{ duration: 0.2 }}
+                className="inline-block"
+              >
+                ↓
+              </motion.span>
+            </button>
+            <Link
+              href={study.href}
+              className="text-xs font-mono font-medium flex items-center gap-1 transition-all duration-200 hover:gap-2"
+              style={{ color: study.accentColor }}
+            >
+              Full case study →
+            </Link>
+          </div>
         </div>
       </div>
     </motion.div>
