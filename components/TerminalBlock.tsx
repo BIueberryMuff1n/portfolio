@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { motion, useInView } from "framer-motion";
 
@@ -83,7 +84,7 @@ export default function TerminalBlock() {
   };
 
   return (
-    <section className="relative py-20 overflow-hidden">
+    <section className="relative py-14 overflow-hidden">
       <div
         className="glow-blob"
         style={{
@@ -125,7 +126,7 @@ export default function TerminalBlock() {
               One command. Four AI agents working in parallel. 847 campaigns analyzed.
               47 campaigns staged. Human review required before anything goes live.
             </p>
-            <div className="space-y-3">
+            <div className="space-y-3 mb-6">
               {[
                 { icon: "⚡", text: "4.2s vs 40hrs manual process" },
                 { icon: "🔒", text: "Human-in-the-loop — AI proposes, humans approve" },
@@ -137,6 +138,12 @@ export default function TerminalBlock() {
                 </div>
               ))}
             </div>
+            <Link
+              href="/demos/creative-matrix"
+              className="inline-flex items-center gap-2 text-sm font-mono font-semibold text-accent-purple hover:text-text-primary border border-accent-purple/30 hover:border-accent-purple/60 hover:bg-accent-purple/10 rounded-lg px-4 py-2.5 transition-all duration-200"
+            >
+              See it in action →
+            </Link>
           </motion.div>
 
           {/* Right: terminal */}

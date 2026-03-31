@@ -1,7 +1,6 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useState, useEffect } from "react";
 
 const EASE = [0.22, 1, 0.36, 1] as [number, number, number, number];
 
@@ -10,43 +9,6 @@ const fadeUp = (delay = 0) => ({
   animate: { opacity: 1, y: 0 },
   transition: { duration: 0.75, ease: EASE, delay },
 });
-
-const ROTATING_PHRASES = [
-  "Multi-Agent Pipelines",
-  "Autonomous Systems",
-  "Self-Improving Loops",
-  "AI-Powered Platforms",
-];
-
-function RotatingPhrase() {
-  const [index, setIndex] = useState(0);
-  const [visible, setVisible] = useState(true);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setVisible(false);
-      setTimeout(() => {
-        setIndex((i) => (i + 1) % ROTATING_PHRASES.length);
-        setVisible(true);
-      }, 400);
-    }, 2800);
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <span
-      className="gradient-text font-display font-bold"
-      style={{
-        display: "inline-block",
-        transition: "opacity 0.35s ease, transform 0.35s ease",
-        opacity: visible ? 1 : 0,
-        transform: visible ? "translateY(0)" : "translateY(-8px)",
-      }}
-    >
-      {ROTATING_PHRASES[index]}
-    </span>
-  );
-}
 
 export default function Hero() {
   return (
@@ -102,14 +64,15 @@ export default function Hero() {
           <span className="gradient-text">.</span>
         </motion.h1>
 
-        {/* Dynamic rotating subtitle */}
+        {/* Static subtitle */}
         <motion.div
           {...fadeUp(0.18)}
           className="text-xl md:text-2xl text-text-secondary mb-6 font-display"
-          style={{ minHeight: "2rem" }}
         >
-          I orchestrate &nbsp;
-          <RotatingPhrase />
+          I orchestrate{" "}
+          <span className="gradient-text font-bold">
+            AI systems that replace entire workflows
+          </span>
         </motion.div>
 
         {/* Statement */}
@@ -158,7 +121,7 @@ export default function Hero() {
         >
           <button
             onClick={() =>
-              document.querySelector("#case-studies")?.scrollIntoView({ behavior: "smooth" })
+              document.querySelector("#demos")?.scrollIntoView({ behavior: "smooth" })
             }
             className="px-7 py-3.5 rounded-xl font-display font-semibold text-sm bg-gradient-accent text-white hover:opacity-90 transition-opacity duration-200 shadow-lg shadow-purple-500/25 tracking-wide"
           >
@@ -172,22 +135,6 @@ export default function Hero() {
           </a>
         </motion.div>
 
-        {/* Scroll indicator */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.4, duration: 0.8 }}
-          className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
-        >
-          <span className="text-text-muted text-[10px] font-mono uppercase tracking-widest">
-            scroll
-          </span>
-          <motion.div
-            animate={{ y: [0, 6, 0] }}
-            transition={{ repeat: Infinity, duration: 1.6, ease: "easeInOut" }}
-            className="w-px h-7 bg-gradient-to-b from-text-muted/60 to-transparent rounded-full"
-          />
-        </motion.div>
       </div>
     </section>
   );

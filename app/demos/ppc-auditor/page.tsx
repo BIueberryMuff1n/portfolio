@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import TutorialOverlay, { RestartTourButton, TutorialStep } from "@/components/TutorialOverlay";
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
@@ -399,7 +400,7 @@ function AnimatedCounter({ target, duration = 1.4 }: { target: number; duration?
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-export default function PPCAuditorDemo() {
+function PPCAuditorDemoInner() {
   const [step, setStep] = useState<AuditStep>("select");
   const [selectedAccount, setSelectedAccount] = useState<AccountId | null>(null);
   const [scope, setScope] = useState<ScopeId>("quick");
@@ -540,7 +541,7 @@ export default function PPCAuditorDemo() {
               92 checkpoints. Hybrid engine. Hard logic API checks + AI semantic analysis via Gemini.
             </p>
             {/* Engine split */}
-            <div className="inline-flex items-center gap-0 glass-card border border-white/8 overflow-hidden" style={{ borderRadius: 10 }}>
+            <div id="ppc-engine-split" className="inline-flex items-center gap-0 glass-card border border-white/8 overflow-hidden" style={{ borderRadius: 10 }}>
               <div className="px-5 py-2.5 flex items-center gap-2 text-xs font-mono border-r border-white/8">
                 <span className="w-2 h-2 rounded-full bg-blue-400" />
                 <span className="text-blue-300">70% Hard Logic</span>
@@ -564,7 +565,7 @@ export default function PPCAuditorDemo() {
           </motion.p>
 
           {/* Account cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div id="ppc-account-cards" className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {ACCOUNTS.map((acc, i) => (
               <motion.button
                 key={acc.id}
@@ -800,7 +801,7 @@ export default function PPCAuditorDemo() {
           </div>
 
           {/* Progress bar */}
-          <div className="mb-8 glass-card px-5 py-4">
+          <div id="ppc-progress" className="mb-8 glass-card px-5 py-4">
             <div className="flex justify-between text-xs font-mono mb-2.5">
               <span className="text-text-muted">{progress}/{total} checkpoints complete</span>
               <span style={{ color: phase === "soft" ? "#a78bfa" : "#60a5fa" }} className="font-semibold">{pct}%</span>
@@ -982,7 +983,7 @@ export default function PPCAuditorDemo() {
           </AnimatePresence>
 
           {/* Score hero row */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div id="ppc-results" className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             {/* Grade */}
             <motion.div
               initial={{ opacity: 0, scale: 0.88 }}
@@ -1242,4 +1243,31 @@ export default function PPCAuditorDemo() {
   }
 
   return null;
+}
+
+const PPC_TOUR_STEPS: TutorialStep[] = [
+  { targetId: "ppc-account-cards", title: "Step 1 — Choose an Account", content: "Select a sample Google Ads account. Each has a different health profile — try all three to see how the audit handles a healthy 'A' account vs a failing 'F' account." },
+  { targetId: "ppc-engine-split", title: "Step 2 — Hybrid Engine", content: "The Hybrid Engine combines hard logic (binary API checks) with AI semantic analysis via Gemini. This catches issues that pure rule-based systems miss." },
+  { targetId: "ppc-progress", title: "Step 3 — Checkpoints Running", content: "92 checkpoints run across 10 categories. Watch them resolve in real-time — green for pass, red for fail, amber for warning." },
+  { title: "Step 4 — Phase Transition", content: "Hard logic checks run first (binary API validations), then the AI Semantic phase kicks in for deeper analysis of ad copy, audience coherence, and landing page relevance." },
+  { targetId: "ppc-results", title: "Step 5 — Final Grade", content: "The health grade reflects the account across all categories. Scroll down to see specific critical issues and the recommended fix for each one." },
+  { title: "Step 6 — Time Saved", content: "What used to take a PPC specialist 4–6 hours of manual auditing now happens in minutes, at any time, for any account — consistent methodology every time." },
+];
+
+export default function PPCAuditorDemo() {
+  const [tourVisible, setTourVisible] = useState(true);
+  const [tourDone, setTourDone] = useState(false);
+  return (
+    <>
+      <PPCAuditorDemoInner />
+      <TutorialOverlay
+        steps={PPC_TOUR_STEPS}
+        visible={tourVisible}
+        onComplete={() => { setTourVisible(false); setTourDone(true); }}
+      />
+      {tourDone && !tourVisible && (
+        <RestartTourButton onRestart={() => { setTourVisible(true); setTourDone(false); }} />
+      )}
+    </>
+  );
 }

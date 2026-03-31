@@ -212,6 +212,7 @@ const caseStudies = [
     title: "Atlas Platform",
     tagline: "21-tool autonomous platform. One engineer. Zero compromises.",
     href: "/case-studies/atlas-platform",
+    demoHref: "/demos/creative-matrix",
     tags: ["Next.js 14", "Firebase", "BigQuery", "Azure", "Vertex AI", "Gemini Vision"],
     accentColor: "#8b5cf6",
     impact: [
@@ -234,6 +235,7 @@ const caseStudies = [
     title: "Media Operations",
     tagline: "Multi-day manual workflows → real-time autonomous pipelines.",
     href: "/case-studies/media-operations",
+    demoHref: "/demos/ppc-auditor",
     tags: ["Python", "BigQuery", "Google Sheets API", "Gemini Vision", "Claude API"],
     accentColor: "#22d3ee",
     impact: [
@@ -256,6 +258,7 @@ const caseStudies = [
     title: "Agency Transformation",
     tagline: "From manual-by-default to automated-by-default. One engineer did this.",
     href: "/case-studies/agency-transformation",
+    demoHref: "/demos/budget-tracker",
     tags: ["Systems Architecture", "Change Management", "AI Integration", "Platform Design"],
     accentColor: "#3b82f6",
     impact: [
@@ -279,7 +282,7 @@ function CaseStudyCard({
   index,
   inView,
 }: {
-  study: (typeof caseStudies)[0];
+  study: (typeof caseStudies)[0] & { demoHref?: string };
   index: number;
   inView: boolean;
 }) {
@@ -390,7 +393,7 @@ function CaseStudyCard({
               </span>
             ))}
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-wrap">
             <button
               onClick={() => setExpanded(!expanded)}
               className="text-xs font-mono font-medium flex items-center gap-1.5 transition-colors duration-200"
@@ -412,6 +415,14 @@ function CaseStudyCard({
             >
               Full case study →
             </Link>
+            {study.demoHref && (
+              <Link
+                href={study.demoHref}
+                className="text-xs font-mono font-medium flex items-center gap-1 transition-all duration-200 hover:gap-2 text-accent-purple hover:text-text-primary"
+              >
+                Try the demo →
+              </Link>
+            )}
           </div>
         </div>
       </div>

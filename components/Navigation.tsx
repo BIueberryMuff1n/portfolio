@@ -68,6 +68,12 @@ export default function Navigation() {
               >
                 Case Studies
               </Link>
+              <Link
+                href="/demos"
+                className="px-4 py-2 text-sm font-mono text-accent-purple hover:text-text-primary transition-colors duration-200 rounded-lg hover:bg-accent-purple/[0.08]"
+              >
+                Live Demos
+              </Link>
               <a
                 href="mailto:hello@anthonycarl.com"
                 className="ml-2 px-4 py-2 text-xs font-mono font-medium rounded-lg border border-accent-purple/35 text-accent-purple hover:bg-accent-purple/10 hover:border-accent-purple/60 transition-all duration-200 tracking-wide uppercase"
@@ -125,6 +131,13 @@ export default function Navigation() {
                 className="text-left px-4 py-3 text-sm font-mono text-text-secondary hover:text-text-primary hover:bg-white/[0.04] rounded-lg transition-colors"
               >
                 Case Studies
+              </Link>
+              <Link
+                href="/demos"
+                onClick={() => setMenuOpen(false)}
+                className="text-left px-4 py-3 text-sm font-mono text-accent-purple hover:text-text-primary hover:bg-accent-purple/[0.08] rounded-lg transition-colors"
+              >
+                Live Demos
               </Link>
               <a
                 href="mailto:hello@anthonycarl.com"

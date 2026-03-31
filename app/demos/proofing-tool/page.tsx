@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
+import TutorialOverlay, { RestartTourButton, TutorialStep } from "@/components/TutorialOverlay";
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
@@ -632,7 +633,7 @@ function MerchantRow({ result, index }: { result: MerchantResult; index: number 
 
 // ── Main Component ─────────────────────────────────────────────────────────────
 
-export default function ProofingToolDemo() {
+function ProofingToolDemoInner() {
   const [phase, setPhase] = useState<Phase>("idle");
   const [selectedPreset, setSelectedPreset] = useState<Preset>(PRESETS[0]);
   const [submarket, setSubmarket] = useState(SUBMARKETS[0]);
@@ -827,7 +828,7 @@ export default function ProofingToolDemo() {
               </div>
 
               {/* Preset cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+              <div id="pt-preset-cards" className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
                 {PRESETS.map(p => (
                   <PresetCard
                     key={p.id}
@@ -891,6 +892,7 @@ export default function ProofingToolDemo() {
                   </div>
                 </div>
                 <motion.button
+                  id="pt-start-btn"
                   onClick={handleStart}
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
@@ -957,7 +959,7 @@ export default function ProofingToolDemo() {
                   </div>
 
                   {/* Document + detected merchants */}
-                  <div className="flex justify-center pr-32 md:pr-40">
+                  <div id="pt-scanner" className="flex justify-center pr-32 md:pr-40">
                     <DocumentScanner
                       preset={selectedPreset}
                       currentPage={currentPage}
@@ -981,7 +983,7 @@ export default function ProofingToolDemo() {
 
                 {/* Chain of Verification sidebar */}
                 <div>
-                  <div className="glass-card p-5 mb-4">
+                  <div id="pt-cov" className="glass-card p-5 mb-4">
                     <div className="flex items-center gap-2 mb-5">
                       <div className="w-1.5 h-1.5 rounded-full bg-accent-purple animate-pulse" />
                       <span className="text-[10px] font-mono text-text-muted uppercase tracking-widest">Chain of Verification</span>
@@ -1222,7 +1224,7 @@ export default function ProofingToolDemo() {
               </div>
 
               {/* ── Results grid ── */}
-              <div className="space-y-2">
+              <div id="pt-results-grid" className="space-y-2">
                 {filteredResults.length === 0 ? (
                   <div className="text-center py-12 text-text-muted font-mono text-sm">No {filter} merchants in this document.</div>
                 ) : (
@@ -1252,5 +1254,32 @@ export default function ProofingToolDemo() {
         </AnimatePresence>
       </div>
     </div>
+  );
+}
+
+const PT_TOUR_STEPS: TutorialStep[] = [
+  { targetId: "pt-preset-cards", title: "Step 1 — Choose a Document", content: "Select a sample mailer PDF. The AI will validate every merchant against the expected list for that campaign." },
+  { targetId: "pt-start-btn", title: "Step 2 — Start Analysis", content: "Click to begin. Gemini Vision will scan each page of the PDF, detecting merchant names, logos, and promotional content." },
+  { targetId: "pt-scanner", title: "Step 3 — Scanning in Progress", content: "Watch the AI scan each page in real-time. It detects merchant names, logos, and promotional content using Vision OCR." },
+  { targetId: "pt-cov", title: "Step 4 — Chain of Verification", content: "Our 'Chain of Verification' technique: first detect content, then cross-reference against the expected list, then verify matches. This reduces false positives." },
+  { title: "Step 5 — Fuzzy Matching", content: "The fuzzy matching engine resolves typos and abbreviations. 'McDnlds' becomes 'McDonald\u2019s' with 94% confidence — watch it resolve in the transition screen." },
+  { targetId: "pt-results-grid", title: "Step 6 — Color-Coded Results", content: "Green = matched, red = missing, amber = unexpected, blue = needs review. Click any merchant row to see the full AI reasoning behind the decision." },
+];
+
+export default function ProofingToolDemo() {
+  const [tourVisible, setTourVisible] = useState(true);
+  const [tourDone, setTourDone] = useState(false);
+  return (
+    <>
+      <ProofingToolDemoInner />
+      <TutorialOverlay
+        steps={PT_TOUR_STEPS}
+        visible={tourVisible}
+        onComplete={() => { setTourVisible(false); setTourDone(true); }}
+      />
+      {tourDone && !tourVisible && (
+        <RestartTourButton onRestart={() => { setTourVisible(true); setTourDone(false); }} />
+      )}
+    </>
   );
 }

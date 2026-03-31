@@ -61,7 +61,7 @@ export default function Experience() {
   const inView = useInView(ref, { once: true, margin: "-80px" });
 
   return (
-    <section id="experience" className="relative py-28 overflow-hidden">
+    <section id="experience" className="relative py-20 overflow-hidden">
       <div
         className="glow-blob"
         style={{

@@ -124,93 +124,74 @@ export default function Skills() {
           style={{ transformOrigin: "left" }}
         />
 
-        {/* ── Tier 1: Orchestration skills ── */}
-        <div className="mb-4">
-          <div className="flex items-center gap-3 mb-6">
-            <span className="text-[10px] font-mono text-accent-purple uppercase tracking-widest">Tier 1</span>
-            <div className="w-4 h-px bg-accent-purple/40" />
-            <span className="text-[10px] font-mono text-text-muted uppercase tracking-widest">AI Orchestration</span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {orchestrationSkills.map((skill, i) => (
-              <motion.div
-                key={skill.title}
-                initial={{ opacity: 0, y: 28 }}
-                animate={inView ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.6, delay: 0.2 + i * 0.07, ease: EASE }}
-                className="orch-skill group"
-              >
-                <div className="flex items-start gap-4">
-                  <span
-                    className="text-2xl mt-0.5 flex-shrink-0 group-hover:scale-110 transition-transform duration-200"
-                    style={{ color: skill.color }}
-                  >
-                    {skill.icon}
-                  </span>
-                  <div>
-                    <div className="font-display font-semibold text-sm text-text-primary mb-1 leading-snug">
-                      {skill.title}
-                    </div>
-                    <div className="text-text-muted text-xs leading-relaxed">{skill.desc}</div>
+        {/* Orchestration skills */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
+          {orchestrationSkills.map((skill, i) => (
+            <motion.div
+              key={skill.title}
+              initial={{ opacity: 0, y: 28 }}
+              animate={inView ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.6, delay: 0.2 + i * 0.07, ease: EASE }}
+              className="orch-skill group"
+            >
+              <div className="flex items-start gap-4">
+                <span
+                  className="text-2xl mt-0.5 flex-shrink-0 group-hover:scale-110 transition-transform duration-200"
+                  style={{ color: skill.color }}
+                >
+                  {skill.icon}
+                </span>
+                <div>
+                  <div className="font-display font-semibold text-sm text-text-primary mb-1 leading-snug">
+                    {skill.title}
                   </div>
+                  <div className="text-text-muted text-xs leading-relaxed">{skill.desc}</div>
                 </div>
-              </motion.div>
-            ))}
-          </div>
+              </div>
+            </motion.div>
+          ))}
         </div>
 
-        {/* ── Tier 2: Infrastructure ── */}
+        {/* Infrastructure — compact row */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6, delay: 0.65, ease: EASE }}
-          className="mt-14"
+          transition={{ duration: 0.5, delay: 0.6, ease: EASE }}
+          className="grid grid-cols-2 lg:grid-cols-4 gap-3"
         >
-          <div className="flex items-center gap-3 mb-6">
-            <span className="text-[10px] font-mono text-text-muted uppercase tracking-widest">Tier 2</span>
-            <div className="w-4 h-px bg-white/10" />
-            <span className="text-[10px] font-mono text-text-muted uppercase tracking-widest">Implementation Infrastructure</span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {infraGroups.map((group, i) => (
-              <motion.div
-                key={group.label}
-                initial={{ opacity: 0, y: 16 }}
-                animate={inView ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.5, delay: 0.7 + i * 0.06, ease: EASE }}
-                className="glass-card p-4"
-              >
-                <div className="flex items-center gap-2 mb-3">
-                  <div
-                    className="w-1.5 h-1.5 rounded-full"
-                    style={{ background: group.color }}
-                  />
+          {infraGroups.map((group, i) => (
+            <motion.div
+              key={group.label}
+              initial={{ opacity: 0, y: 12 }}
+              animate={inView ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.4, delay: 0.65 + i * 0.06, ease: EASE }}
+              className="glass-card p-3.5"
+            >
+              <div className="flex items-center gap-1.5 mb-2.5">
+                <div className="w-1.5 h-1.5 rounded-full" style={{ background: group.color }} />
+                <span
+                  className="text-[10px] font-mono font-medium uppercase tracking-widest"
+                  style={{ color: group.color }}
+                >
+                  {group.label}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {group.items.map((item) => (
                   <span
-                    className="text-[10px] font-mono font-medium uppercase tracking-widest"
-                    style={{ color: group.color }}
+                    key={item}
+                    className="text-[10px] px-1.5 py-0.5 rounded font-mono text-text-secondary"
+                    style={{
+                      background: `${group.color}0a`,
+                      border: `1px solid ${group.color}20`,
+                    }}
                   >
-                    {group.label}
+                    {item}
                   </span>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {group.items.map((item) => (
-                    <span
-                      key={item}
-                      className="text-[10px] px-2 py-0.5 rounded-md font-mono text-text-secondary"
-                      style={{
-                        background: `${group.color}0a`,
-                        border: `1px solid ${group.color}20`,
-                      }}
-                    >
-                      {item}
-                    </span>
-                  ))}
-                </div>
-              </motion.div>
-            ))}
-          </div>
+                ))}
+              </div>
+            </motion.div>
+          ))}
         </motion.div>
       </div>
     </section>

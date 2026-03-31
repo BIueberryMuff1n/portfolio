@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import Link from "next/link";
+import TutorialOverlay, { RestartTourButton, TutorialStep } from "@/components/TutorialOverlay";
 import {
   PieChart,
   Pie,
@@ -360,7 +361,7 @@ function DailyChart({ data, platform }: { data: number[]; platform: string }) {
 }
 
 // ─── Main component ──────────────────────────────────────────────────────────
-export default function BudgetTrackerDemo() {
+function BudgetTrackerDemoInner() {
   const [timeRange, setTimeRange] = useState<"week" | "month" | "quarter">("month");
   const [platformFilter, setPlatformFilter] = useState<string>("All");
   const [sortKey, setSortKey] = useState<string>("pacing");
@@ -538,7 +539,7 @@ export default function BudgetTrackerDemo() {
           </motion.div>
 
           {/* ── Summary cards ─────────────────────────────────────────────── */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div id="bt-summary-cards" className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             <SummaryCard label="Total Budget" value={Math.round(TOTAL_BUDGET * rangeMultiplier)} suffix="K" accent="#8b5cf6" sparkData={budgetSpark} delay={0.05} started={inView} />
             <SummaryCard label="Total Spend" value={Math.round(TOTAL_SPEND * rangeMultiplier)} suffix="K" accent="#22d3ee" sparkData={spendSpark} delay={0.12} started={inView} />
             <SummaryCard label="Avg Pacing" value={87} suffix="%" accent="#10b981" sparkData={pacingSpark} delay={0.19} started={inView} />
@@ -550,7 +551,7 @@ export default function BudgetTrackerDemo() {
             {/* Left: Campaign table (2/3 width) */}
             <div className="xl:col-span-2 space-y-6">
               {/* ── Campaign Table ───────────────────────────────────────── */}
-              <motion.div {...fadeUp(0.1)} className="glass-card overflow-hidden">
+              <motion.div id="bt-campaign-table" {...fadeUp(0.1)} className="glass-card overflow-hidden">
                 {/* Table header */}
                 <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
                   <span style={{ fontFamily: "var(--font-syne)", fontWeight: 600, fontSize: 15 }}>Campaign Performance</span>
@@ -777,7 +778,7 @@ export default function BudgetTrackerDemo() {
             {/* Right column */}
             <div className="space-y-6">
               {/* ── Pacing Alerts ─────────────────────────────────────────── */}
-              <motion.div {...fadeUp(0.15)} className="glass-card overflow-hidden">
+              <motion.div id="bt-alerts" {...fadeUp(0.15)} className="glass-card overflow-hidden">
                 <div className="px-5 py-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
                   <div className="flex items-center justify-between">
                     <span style={{ fontFamily: "var(--font-syne)", fontWeight: 600, fontSize: 15 }}>Pacing Alerts</span>
@@ -862,7 +863,7 @@ export default function BudgetTrackerDemo() {
               </motion.div>
 
               {/* ── Approval Workflow ─────────────────────────────────────── */}
-              <motion.div {...fadeUp(0.25)} className="glass-card overflow-hidden">
+              <motion.div id="bt-approval" {...fadeUp(0.25)} className="glass-card overflow-hidden">
                 <div className="px-5 py-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
                   <span style={{ fontFamily: "var(--font-syne)", fontWeight: 600, fontSize: 15 }}>Approval Workflow</span>
                 </div>
@@ -990,5 +991,32 @@ export default function BudgetTrackerDemo() {
         </div>
       </div>
     </div>
+  );
+}
+
+const BT_TOUR_STEPS: TutorialStep[] = [
+  { targetId: "bt-summary-cards", title: "Step 1 — Real-Time KPIs", content: "Total budget, spend, pacing, and active campaigns — all updating automatically from BigQuery. These counters animate on load to show live data." },
+  { targetId: "bt-campaign-table", title: "Step 2 — Campaign Table", content: "Sort by any column or filter by platform. Click any row to expand it and see the daily spend trend for that campaign." },
+  { targetId: "bt-alerts", title: "Step 3 — Pacing Alerts", content: "Automated alerts flag campaigns that are over or under pacing. Click any alert to see the recommended fix — the system tells you exactly what to do." },
+  { title: "Step 4 — Budget Reallocation", content: "The approval workflow at the bottom shows budget changes going through role-based review: CST submits, Biddable Lead reviews, Super Admin approves." },
+  { targetId: "bt-approval", title: "Step 5 — Approval Workflow", content: "This replaces ad-hoc email threads. Budget changes are tracked, versioned, and approved in the same tool that monitors pacing — no context-switching." },
+  { title: "Step 6 — The Before/After", content: "Scroll to the bottom to see the comparison table. Weekly manual spreadsheet updates replaced by a live dashboard that anyone on the team can use." },
+];
+
+export default function BudgetTrackerDemo() {
+  const [tourVisible, setTourVisible] = useState(true);
+  const [tourDone, setTourDone] = useState(false);
+  return (
+    <>
+      <BudgetTrackerDemoInner />
+      <TutorialOverlay
+        steps={BT_TOUR_STEPS}
+        visible={tourVisible}
+        onComplete={() => { setTourVisible(false); setTourDone(true); }}
+      />
+      {tourDone && !tourVisible && (
+        <RestartTourButton onRestart={() => { setTourVisible(true); setTourDone(false); }} />
+      )}
+    </>
   );
 }

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import TutorialOverlay, { RestartTourButton, TutorialStep } from "@/components/TutorialOverlay";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -566,6 +567,7 @@ function BriefSelector({
 
       {/* Run button */}
       <button
+        id="cm-run-btn"
         onClick={onRun}
         disabled={disabled || (isCustom && !custom.trim())}
         className="relative overflow-hidden flex items-center gap-3 transition-all duration-300"
@@ -1176,6 +1178,20 @@ export default function CreativeMatrixPage() {
 
   const isRunning = simStatus === "running";
 
+  const [tourVisible, setTourVisible] = useState(true);
+  const [tourDone, setTourDone] = useState(false);
+
+  const TOUR_STEPS: TutorialStep[] = [
+    { targetId: "cm-brief-selector", title: "Step 1 — Choose a Brief", content: "Start by selecting a campaign brief. This is what a client would submit to the agency — a product, audience, and objective." },
+    { targetId: "cm-run-btn", title: "Step 2 — Launch the Pipeline", content: "Click here to launch the 4-agent AI pipeline. Each agent specializes in a different part of campaign creation and runs sequentially." },
+    { targetId: "cm-pipeline-graph", title: "Step 3 — Watch the Data Flow", content: "Watch data move between agents in real-time. Each node is a specialized AI agent. The animated packet shows information passing from one to the next." },
+    { targetId: "cm-agent-0", title: "Step 4 — Strategist Agent", content: "The Strategist analyzes the brief and identifies target audiences, messaging pillars, and competitive positioning — the strategic foundation." },
+    { targetId: "cm-agent-1", title: "Step 5 — Creative Agent", content: "The Creative agent generates multiple ad copy variations tailored to each audience segment defined by the Strategist." },
+    { targetId: "cm-agent-2", title: "Step 6 — Media Planner Agent", content: "The Media Planner recommends optimal channel allocation and budget distribution based on the target audiences." },
+    { targetId: "cm-agent-3", title: "Step 7 — QA Agent", content: "The QA agent scores all outputs against brand guidelines — catching issues before they reach a human reviewer." },
+    { targetId: "cm-summary", title: "Step 8 — The Result", content: "3 days of agency work, completed in seconds. This is what AI orchestration looks like at scale — not one model, but a coordinated team." },
+  ];
+
   return (
     <main
       className="relative min-h-screen pt-24 pb-20 overflow-x-hidden"
@@ -1241,6 +1257,7 @@ export default function CreativeMatrixPage() {
 
         {/* Pipeline graph */}
         <motion.div
+          id="cm-pipeline-graph"
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.15, ease: EASE }}
@@ -1280,6 +1297,7 @@ export default function CreativeMatrixPage() {
         <AnimatePresence>
           {simStatus === "idle" && (
             <motion.div
+              id="cm-brief-selector"
               key="brief-selector"
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
@@ -1311,6 +1329,7 @@ export default function CreativeMatrixPage() {
         <AnimatePresence>
           {simStatus !== "idle" && (
             <motion.div
+              id="cm-agent-grid"
               key="agent-grid"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -1318,13 +1337,14 @@ export default function CreativeMatrixPage() {
               className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6"
             >
               {AGENTS.map((_, i) => (
-                <AgentPanel
-                  key={i}
-                  index={i}
-                  status={agentStatuses[i]}
-                  response={response}
-                  revealCount={revealCounts[i]}
-                />
+                <div id={`cm-agent-${i}`} key={i}>
+                  <AgentPanel
+                    index={i}
+                    status={agentStatuses[i]}
+                    response={response}
+                    revealCount={revealCounts[i]}
+                  />
+                </div>
               ))}
             </motion.div>
           )}
@@ -1333,7 +1353,9 @@ export default function CreativeMatrixPage() {
         {/* Summary */}
         <AnimatePresence>
           {simStatus === "complete" && response && (
-            <PipelineSummary key="summary" response={response} onReset={resetPipeline} />
+            <div id="cm-summary" key="summary">
+              <PipelineSummary response={response} onReset={resetPipeline} />
+            </div>
           )}
         </AnimatePresence>
 
@@ -1356,6 +1378,15 @@ export default function CreativeMatrixPage() {
           </motion.div>
         )}
       </div>
+
+      <TutorialOverlay
+        steps={TOUR_STEPS}
+        visible={tourVisible}
+        onComplete={() => { setTourVisible(false); setTourDone(true); }}
+      />
+      {tourDone && !tourVisible && (
+        <RestartTourButton onRestart={() => { setTourVisible(true); setTourDone(false); }} />
+      )}
     </main>
   );
 }

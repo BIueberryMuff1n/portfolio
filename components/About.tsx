@@ -32,115 +32,6 @@ function AnimatedCounter({ target, prefix = "", suffix = "", inView, duration = 
   );
 }
 
-// Atlas module diagram — 6 modules as connected nodes
-function AtlasMiniMap() {
-  const modules = [
-    { id: "cm", label: "Creative Matrix", sub: "4 AI agents", x: 20, y: 12 },
-    { id: "pp", label: "Print Proofing", sub: "Gemini Vision", x: 300, y: 12 },
-    { id: "ct", label: "Campaign Taxonomy", sub: "Governed workflows", x: 20, y: 110 },
-    { id: "bp", label: "Budget Pacing", sub: "BigQuery real-time", x: 300, y: 110 },
-    { id: "pa", label: "PPC Auditor", sub: "92 checkpoints", x: 20, y: 208 },
-    { id: "ua", label: "User Admin", sub: "RBAC + Auth", x: 300, y: 208 },
-  ];
-
-  const connections = [
-    [0, 1], [2, 3], [4, 5],
-    [0, 2], [2, 4],
-    [1, 3], [3, 5],
-    [1, 2],
-  ];
-
-  const nodeW = 160;
-  const nodeH = 52;
-
-  return (
-    <div className="relative w-full">
-      <div className="text-[10px] font-mono uppercase tracking-widest text-text-muted mb-4 flex items-center gap-2">
-        <span className="w-4 h-px bg-accent-purple/50" />
-        Atlas Platform — 21 tools · 136+ API routes
-      </div>
-      <div className="relative overflow-hidden rounded-xl" style={{ background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", padding: "20px" }}>
-        <svg
-          viewBox="0 0 500 290"
-          className="w-full"
-          style={{ height: "auto", maxHeight: 220 }}
-          aria-hidden="true"
-        >
-          {/* Connection lines */}
-          {connections.map(([a, b], i) => {
-            const nodeA = modules[a];
-            const nodeB = modules[b];
-            const x1 = nodeA.x + nodeW / 2;
-            const y1 = nodeA.y + nodeH / 2;
-            const x2 = nodeB.x + nodeW / 2;
-            const y2 = nodeB.y + nodeH / 2;
-            return (
-              <line
-                key={i}
-                x1={x1} y1={y1} x2={x2} y2={y2}
-                stroke="rgba(139,92,246,0.18)"
-                strokeWidth="1"
-                strokeDasharray="4 3"
-              />
-            );
-          })}
-
-          {/* Nodes */}
-          {modules.map((m, i) => (
-            <g key={m.id}>
-              <rect
-                x={m.x}
-                y={m.y}
-                width={nodeW}
-                height={nodeH}
-                rx="8"
-                fill="rgba(139,92,246,0.08)"
-                stroke="rgba(139,92,246,0.3)"
-                strokeWidth="0.8"
-              />
-              <text
-                x={m.x + 12}
-                y={m.y + 19}
-                fill="#d1d5db"
-                fontSize="9.5"
-                fontFamily="var(--font-syne)"
-                fontWeight="600"
-              >
-                {m.label}
-              </text>
-              <text
-                x={m.x + 12}
-                y={m.y + 35}
-                fill="rgba(100,116,139,0.9)"
-                fontSize="8"
-                fontFamily="var(--font-jetbrains)"
-              >
-                {m.sub}
-              </text>
-              {/* Pulse dot */}
-              <circle
-                cx={m.x + nodeW - 12}
-                cy={m.y + 12}
-                r="3"
-                fill={i < 2 ? "#10b981" : "#8b5cf6"}
-                opacity="0.8"
-              />
-            </g>
-          ))}
-
-          {/* Shared infrastructure label */}
-          <rect x={160} y={124} width={160} height={22} rx="4"
-            fill="rgba(34,211,238,0.08)" stroke="rgba(34,211,238,0.2)" strokeWidth="0.8" />
-          <text x="240" y="139" textAnchor="middle" fill="rgba(34,211,238,0.8)" fontSize="8.5"
-            fontFamily="var(--font-jetbrains)">
-            Firebase · BigQuery · Azure
-          </text>
-        </svg>
-      </div>
-    </div>
-  );
-}
-
 const metrics = [
   { target: 300, prefix: "$", suffix: "K+", label: "saved / month", color: "#8b5cf6" },
   { target: 21, prefix: "", suffix: "", label: "tools orchestrated", color: "#22d3ee" },
@@ -153,7 +44,7 @@ export default function About() {
   const inView = useInView(ref, { once: true, margin: "-100px" });
 
   return (
-    <section id="about" className="relative py-28 overflow-hidden">
+    <section id="about" className="relative py-20 overflow-hidden">
       <div
         className="glow-blob"
         style={{
@@ -249,15 +140,6 @@ export default function About() {
           </motion.div>
         </div>
 
-        {/* Atlas mini-map */}
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.7, delay: 0.5, ease: EASE }}
-          className="mt-16"
-        >
-          <AtlasMiniMap />
-        </motion.div>
       </div>
     </section>
   );
