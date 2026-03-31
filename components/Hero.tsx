@@ -43,7 +43,7 @@ export default function Hero() {
         aria-hidden="true"
       />
 
-      <div className="section-container relative z-10 py-32 text-center">
+      <div className="section-container relative z-10 py-24 text-center">
         {/* Status chip */}
         <motion.div
           {...fadeUp(0)}
@@ -64,7 +64,7 @@ export default function Hero() {
           <span className="gradient-text">.</span>
         </motion.h1>
 
-        {/* Static subtitle */}
+        {/* Subtitle */}
         <motion.div
           {...fadeUp(0.18)}
           className="text-xl md:text-2xl text-text-secondary mb-6 font-display"
@@ -75,24 +75,22 @@ export default function Hero() {
           </span>
         </motion.div>
 
-        {/* Statement */}
+        {/* Statement — one line */}
         <motion.p
           {...fadeUp(0.26)}
           className="text-text-muted text-base md:text-lg max-w-xl mx-auto leading-relaxed mb-10 font-sans"
         >
           I don&apos;t just write code — I design the systems that run themselves.
-          <br className="hidden md:block" />
-          Autonomous pipelines. Self-improving loops. AI that multiplies human capacity.
         </motion.p>
 
-        {/* Inline proof bar */}
+        {/* Proof bar */}
         <motion.div
           {...fadeUp(0.33)}
-          className="inline-flex flex-wrap items-center justify-center gap-0 mb-12 glass-card border border-white/8 overflow-hidden"
-          style={{ borderRadius: 12 }}
+          className="inline-flex flex-wrap items-center justify-center gap-0 mb-12 glass-card overflow-hidden"
+          style={{ borderRadius: 12, border: "1px solid rgba(255,255,255,0.08)" }}
         >
           {[
-            { value: "21", label: "tools orchestrated" },
+            { value: "21 tools", label: "orchestrated" },
             { value: "$300K+", label: "saved / month" },
             { value: "10-node", label: "AI pipeline" },
             { value: "4 agents", label: "Creative Matrix" },
@@ -104,7 +102,7 @@ export default function Hero() {
                 borderRight: i < 3 ? "1px solid rgba(255,255,255,0.07)" : undefined,
               }}
             >
-              <span className="font-display font-bold text-sm md:text-base text-text-primary">
+              <span className="font-display font-bold text-sm md:text-base text-white">
                 {m.value}
               </span>
               <span className="text-text-muted text-[10px] font-mono uppercase tracking-wider mt-0.5">
@@ -114,10 +112,10 @@ export default function Hero() {
           ))}
         </motion.div>
 
-        {/* CTAs */}
+        {/* Primary CTAs */}
         <motion.div
           {...fadeUp(0.4)}
-          className="flex flex-wrap items-center justify-center gap-4"
+          className="flex flex-wrap items-center justify-center gap-4 mb-5"
         >
           <button
             onClick={() =>
@@ -125,23 +123,28 @@ export default function Hero() {
             }
             className="px-7 py-3.5 rounded-xl font-display font-semibold text-sm bg-gradient-accent text-white hover:opacity-90 transition-opacity duration-200 shadow-lg shadow-purple-500/25 tracking-wide"
           >
-            See the Systems →
+            See the Demos →
           </button>
-          <a
-            href="mailto:hello@anthonycarl.com"
+          <button
+            onClick={() =>
+              document.querySelector("#contact")?.scrollIntoView({ behavior: "smooth" })
+            }
             className="px-7 py-3.5 rounded-xl font-display font-medium text-sm glass-card border border-white/10 text-text-secondary hover:text-text-primary hover:border-white/20 transition-all duration-200"
           >
             Let&apos;s Talk
-          </a>
+          </button>
+        </motion.div>
+
+        {/* Resume — subtle below CTAs */}
+        <motion.div {...fadeUp(0.46)}>
           <a
             href="/Anthony_Carl_Resume.pdf"
             download
-            className="px-7 py-3.5 rounded-xl font-display font-medium text-sm glass-card border border-white/10 text-text-secondary hover:text-text-primary hover:border-white/20 transition-all duration-200"
+            className="text-text-muted text-xs font-mono hover:text-text-secondary transition-colors duration-200"
           >
-            Resume ↓
+            ↓ Download Resume
           </a>
         </motion.div>
-
       </div>
     </section>
   );

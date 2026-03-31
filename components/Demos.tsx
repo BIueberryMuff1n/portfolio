@@ -54,7 +54,7 @@ export default function Demos() {
   const inView = useInView(ref, { once: true, margin: "-60px" });
 
   return (
-    <section id="demos" className="relative py-20 overflow-hidden">
+    <section id="demos" className="relative py-16 overflow-hidden">
       <div
         className="glow-blob"
         style={{
@@ -99,8 +99,8 @@ export default function Demos() {
             transition={{ duration: 0.6, delay: 0.08 }}
           >
             <h2 className="font-display font-bold text-4xl md:text-5xl text-text-primary mb-3">
-              The systems.{" "}
-              <span className="gradient-text">Live.</span>
+              Try the systems{" "}
+              <span className="gradient-text">I built.</span>
             </h2>
             <p className="text-text-secondary max-w-xl text-sm leading-relaxed">
               These aren&apos;t prototypes — they&apos;re production systems from Atlas Platform,
