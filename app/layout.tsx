@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Syne, IBM_Plex_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import { JsonLd } from "./json-ld";
 
 const syne = Syne({
   subsets: ["latin"],
@@ -68,6 +69,7 @@ export default function RootLayout({
       <body
         className={`${syne.variable} ${ibmPlexSans.variable} ${jetbrainsMono.variable} antialiased bg-background text-text-primary`}
       >
+        <JsonLd />
         <div className="noise-overlay" aria-hidden="true" />
         {children}
       </body>
