@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 type Platform = "Instagram" | "Facebook" | "TikTok" | "LinkedIn";
 type Phase = "idle" | "analyzing" | "generating" | "composing" | "done";
+type DrivePhase = "idle" | "connecting" | "creating" | "exporting" | "done";
 type FilterTab = "All" | Platform;
 
 interface AdVariation {
@@ -90,6 +91,8 @@ export default function AdEnginePage() {
   const [ads, setAds] = useState<AdVariation[]>([]);
   const [activeFilter, setActiveFilter] = useState<FilterTab>("All");
   const [currentPhaseIndex, setCurrentPhaseIndex] = useState(-1);
+  const [drivePhase, setDrivePhase] = useState<DrivePhase>("idle");
+  const [exportedCount, setExportedCount] = useState(0);
 
   const activeCampaign = selectedPreset ?? (customPrompt.trim() || null);
   const isGenerating = phase === "analyzing" || phase === "generating" || phase === "composing";
@@ -112,6 +115,20 @@ export default function AdEnginePage() {
     const key = selectedPreset && selectedPreset in AD_DATA ? selectedPreset : "Luxury Watches Summer Sale";
     setAds(AD_DATA[key]);
     setPhase("done");
+  };
+
+  const handleDriveExport = async () => {
+    setExportedCount(0);
+    setDrivePhase("connecting");
+    await new Promise((r) => setTimeout(r, 1000));
+    setDrivePhase("creating");
+    await new Promise((r) => setTimeout(r, 1000));
+    setDrivePhase("exporting");
+    for (let i = 1; i <= 12; i++) {
+      await new Promise((r) => setTimeout(r, 220));
+      setExportedCount(i);
+    }
+    setDrivePhase("done");
   };
 
   const handleReset = () => {
@@ -489,8 +506,22 @@ export default function AdEnginePage() {
                   );
                 })}
                 <button
+                  onClick={handleDriveExport}
+                  className="ml-auto flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200"
+                  style={{
+                    background: "linear-gradient(135deg, #1a73e8, #1557b0)",
+                    color: "#fff",
+                    boxShadow: "0 2px 12px rgba(26,115,232,0.35)",
+                  }}
+                >
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M6.6 10.8L4 15l2 3.46h12l2-3.46-2.6-4.26H6.6zM8.4 6l-2 3.46H3l2 3.46h14l2-3.46h-3.4L15.6 6H8.4zM12 2L9 7.2h6L12 2z" />
+                  </svg>
+                  Export to Drive
+                </button>
+                <button
                   onClick={handleReset}
-                  className="ml-auto px-3.5 py-2 rounded-lg text-xs font-medium transition-all duration-200"
+                  className="px-3.5 py-2 rounded-lg text-xs font-medium transition-all duration-200"
                   style={{
                     background: "rgba(255,255,255,0.04)",
                     border: "1px solid rgba(255,255,255,0.08)",
@@ -611,6 +642,124 @@ export default function AdEnginePage() {
           )}
         </AnimatePresence>
       </main>
+
+      {/* Google Drive Export Modal */}
+      <AnimatePresence>
+        {drivePhase !== "idle" && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-6"
+            style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(6px)" }}
+            onClick={() => drivePhase === "done" && setDrivePhase("idle")}
+          >
+            <motion.div
+              initial={{ scale: 0.94, y: 16 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.94, y: 16 }}
+              onClick={(e) => e.stopPropagation()}
+              className="rounded-2xl w-full max-w-md p-6"
+              style={{ background: "#111113", border: "1px solid rgba(255,255,255,0.08)" }}
+            >
+              {/* Header */}
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "rgba(26,115,232,0.15)", border: "1px solid rgba(26,115,232,0.3)" }}>
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="#4a8fef">
+                    <path d="M6.6 10.8L4 15l2 3.46h12l2-3.46-2.6-4.26H6.6zM8.4 6l-2 3.46H3l2 3.46h14l2-3.46h-3.4L15.6 6H8.4zM12 2L9 7.2h6L12 2z" />
+                  </svg>
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-white">Google Drive Export</div>
+                  <div className="text-[11px]" style={{ color: "rgba(255,255,255,0.35)" }}>
+                    {drivePhase === "done" ? "12 files exported successfully" : "Exporting ad creatives…"}
+                  </div>
+                </div>
+              </div>
+
+              {/* Steps */}
+              <div className="space-y-3 mb-5">
+                {[
+                  { key: "connecting", label: "Connecting to Google Drive…" },
+                  { key: "creating",   label: "Creating folder: /Ad Campaigns/Summer Sale 2026/" },
+                  { key: "exporting",  label: "Exporting 12 creatives" },
+                ].map((step) => {
+                  const phases: DrivePhase[] = ["connecting", "creating", "exporting", "done"];
+                  const stepIdx = phases.indexOf(step.key as DrivePhase);
+                  const curIdx  = phases.indexOf(drivePhase);
+                  const status  = curIdx > stepIdx ? "done" : curIdx === stepIdx ? "active" : "pending";
+                  return (
+                    <div key={step.key} className="flex items-center gap-3">
+                      <div
+                        className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-400"
+                        style={{
+                          background: status === "done" ? "rgba(26,115,232,0.2)" : status === "active" ? "rgba(26,115,232,0.12)" : "rgba(255,255,255,0.04)",
+                          border: `1px solid ${status === "pending" ? "rgba(255,255,255,0.08)" : "rgba(26,115,232,0.4)"}`,
+                        }}
+                      >
+                        {status === "done"   ? <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="#4a8fef" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                        : status === "active" ? <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: "#4a8fef" }} />
+                        : <div className="w-2 h-2 rounded-full" style={{ background: "rgba(255,255,255,0.12)" }} />}
+                      </div>
+                      <span className="text-xs transition-colors duration-300" style={{ color: status === "active" ? "#fff" : status === "done" ? "rgba(255,255,255,0.4)" : "rgba(255,255,255,0.2)" }}>
+                        {step.label}
+                      </span>
+                      {status === "active" && step.key === "exporting" && (
+                        <span className="ml-auto text-[11px] font-mono" style={{ color: "#4a8fef" }}>{exportedCount}/12</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Progress bar during exporting */}
+              {(drivePhase === "exporting" || drivePhase === "done") && (
+                <div className="mb-5 h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+                  <motion.div
+                    className="h-full rounded-full"
+                    style={{ background: "linear-gradient(90deg, #1a73e8, #4a8fef)" }}
+                    animate={{ width: `${(exportedCount / 12) * 100}%` }}
+                    transition={{ duration: 0.2 }}
+                  />
+                </div>
+              )}
+
+              {/* File list (done state) */}
+              {drivePhase === "done" && (
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-5 rounded-xl overflow-hidden" style={{ border: "1px solid rgba(255,255,255,0.06)" }}>
+                  <div className="px-3 py-2 text-[10px] uppercase tracking-widest" style={{ background: "rgba(26,115,232,0.08)", color: "rgba(255,255,255,0.3)", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                    /Ad Campaigns/Summer Sale 2026/
+                  </div>
+                  <div className="max-h-44 overflow-y-auto">
+                    {ads.map((ad, idx) => (
+                      <div key={ad.id} className="flex items-center gap-2.5 px-3 py-2 text-[11px]" style={{ borderBottom: idx < ads.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
+                        <svg className="w-3 h-3 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="#4a8fef" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><polyline points="9 11 12 14 22 4"/></svg>
+                        <span className="flex-1 truncate font-mono" style={{ color: "rgba(255,255,255,0.55)" }}>
+                          {(selectedPreset || "campaign").toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")}-{ad.platform.toLowerCase()}-{ad.size.replace("×", "x")}-v{idx + 1}.png
+                        </span>
+                        <span style={{ color: "rgba(255,255,255,0.25)" }}>{(120 + idx * 37).toFixed(0)}KB</span>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Footer button */}
+              <button
+                onClick={() => setDrivePhase("idle")}
+                className="w-full py-2.5 rounded-xl text-xs font-semibold transition-all duration-200"
+                style={{
+                  background: drivePhase === "done" ? "linear-gradient(135deg, #1a73e8, #1557b0)" : "rgba(255,255,255,0.05)",
+                  color: drivePhase === "done" ? "#fff" : "rgba(255,255,255,0.35)",
+                  cursor: drivePhase === "done" ? "pointer" : "default",
+                }}
+              >
+                {drivePhase === "done" ? "Done — Close" : "Please wait…"}
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
