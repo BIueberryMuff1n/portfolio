@@ -184,7 +184,7 @@ function CTASection({ demoHref }: { demoHref?: string }) {
       initial={{ opacity: 0, y: 32 }}
       animate={inView ? { opacity: 1, y: 0 } : {}}
       transition={{ duration: 0.7, ease: EASE }}
-      className="py-20 border-t border-white/[0.05] text-center"
+      className="py-16 border-t border-white/[0.05] text-center"
     >
       <p className="font-mono text-xs text-text-muted uppercase tracking-widest mb-4">
         Let&apos;s build
