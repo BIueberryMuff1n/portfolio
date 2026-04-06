@@ -37,16 +37,17 @@ export default function About() {
 
           <div className="space-y-4 text-text-secondary text-base leading-relaxed mb-8">
             <p>
-              Three years embedded inside a media agency. I built the automation layer —
-              from scratch, as the sole engineer — saving{" "}
-              <span className="text-text-primary font-medium">six figures monthly</span> in operational overhead.
+              Three years as the sole engineer at a media agency. I built Atlas — a
+              21-tool autonomous platform that eliminated{" "}
+              <span className="text-text-primary font-medium">$300K+/month</span> in operational overhead
+              and turned multi-day manual workflows into autonomous pipelines.
             </p>
             <p>
-              My work isn&apos;t about writing functions. It&apos;s about designing systems where AI agents
-              handle 80% of the work, and humans only touch what actually needs human judgment.
+              My work isn&apos;t about writing functions. It&apos;s about designing systems where AI handles
+              the predictable work, and humans only touch what actually requires judgment.
             </p>
             <p className="text-text-muted text-sm">
-              Available for: AI systems architecture · multi-agent pipeline design · full-stack implementation
+              Looking for: AI orchestration roles · multi-agent pipeline design · teams that want to build systems, not just features
             </p>
           </div>
 

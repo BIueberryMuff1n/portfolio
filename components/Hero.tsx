@@ -90,10 +90,10 @@ export default function Hero() {
           style={{ borderRadius: 12, border: "1px solid rgba(255,255,255,0.08)" }}
         >
           {[
-            { value: "21 tools", label: "orchestrated" },
-            { value: "$300K+", label: "saved / month" },
-            { value: "10-node", label: "AI pipeline" },
-            { value: "4 agents", label: "Creative Matrix" },
+            { value: "$300K+/mo", label: "cost eliminated" },
+            { value: "847 campaigns", label: "per pipeline run" },
+            { value: "92 checks", label: "per PPC audit" },
+            { value: "4.2 seconds", label: "vs 40hrs manual" },
           ].map((m, i) => (
             <div
               key={m.label}

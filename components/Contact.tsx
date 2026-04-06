@@ -66,8 +66,8 @@ export default function Contact() {
             transition={{ duration: 0.6, delay: 0.18, ease: EASE }}
             className="text-text-secondary text-base mb-10 leading-relaxed"
           >
-            Open to roles in AI systems architecture, multi-agent platform design, and
-            full-stack engineering where the goal is systems that scale beyond their creator.
+            Open to AI orchestration roles where the goal is production systems — not
+            demos. Multi-agent pipelines, autonomous workflows, human-in-the-loop design.
           </motion.p>
 
           {/* Email CTA */}

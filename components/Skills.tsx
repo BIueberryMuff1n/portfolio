@@ -30,6 +30,15 @@ export default function Skills() {
           <span className="section-label-text">The Stack</span>
         </motion.div>
 
+        <motion.p
+          initial={{ opacity: 0, y: 16 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.5, delay: 0.08, ease: EASE }}
+          className="text-text-muted text-sm mb-5 max-w-lg"
+        >
+          The tools I reach for when building pipelines, not just prototypes.
+        </motion.p>
+
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}

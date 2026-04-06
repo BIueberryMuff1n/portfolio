@@ -468,11 +468,11 @@ export default function CaseStudies() {
           className="mb-12"
         >
           <h2 className="font-display font-bold text-4xl md:text-5xl text-text-primary mb-3">
-            The systems{" "}
-            <span className="gradient-text">I built.</span>
+            The engineering{" "}
+            <span className="gradient-text">behind it.</span>
           </h2>
           <p className="text-text-secondary max-w-xl text-sm">
-            Each project is documented with its architecture, agent design, and measured impact.
+            Architecture decisions, agent design, and real measured impact — documented.
           </p>
         </motion.div>
 
