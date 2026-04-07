@@ -1,5 +1,6 @@
-import Navigation from "@/components/Navigation";
+﻿import Navigation from "@/components/Navigation";
 import Hero from "@/components/Hero";
+import ProofMetrics from "@/components/ProofMetrics";
 import About from "@/components/About";
 import Experience from "@/components/Experience";
 import TerminalBlock from "@/components/TerminalBlock";
@@ -14,6 +15,7 @@ export default function Home() {
       <Navigation />
       <main>
         <Hero />
+        <ProofMetrics />
         <About />
         <Experience />
         <TerminalBlock />
