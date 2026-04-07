@@ -1,743 +1,1018 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-type Tab = "hierarchy" | "dataflow" | "simulator";
+type Phase = "idle" | "running" | "complete";
+type SkillState = "idle" | "active" | "complete";
+type DataTab = "overview" | "asins" | "ppc" | "inventory";
 
-type OutputKey =
-  | "weekly-email"
-  | "sales-report"
-  | "ad-performance"
-  | "pptx-slide"
-  | "inventory-alert"
-  | "cowork-route";
+// ─── Mock Data ────────────────────────────────────────────────────────────────
 
-// ─── Skills Data ─────────────────────────────────────────────────────────────
+const ASINS = [
+  { asin: "B0CK2X9M1", product: "Vitamin C Serum 30ml",        units: 412, revenue: 16068, margin: 62, bsr: 1847  },
+  { asin: "B0CK3Y8N2", product: "Retinol Night Cream 50ml",    units: 289, revenue: 11271, margin: 58, bsr: 3214  },
+  { asin: "B0CK4Z7P3", product: "Hyaluronic Acid Moisturizer", units: 234, revenue:  8190, margin: 55, bsr: 5891  },
+  { asin: "B0CK5A6Q4", product: "Niacinamide Toner 200ml",     units: 187, revenue:  6545, margin: 64, bsr: 8432  },
+  { asin: "B0CK6B5R5", product: "Collagen Eye Cream 15ml",     units: 125, revenue:  5758, margin: 71, bsr: 12108 },
+];
 
-const FOUNDATION_SKILLS = [
+const INVENTORY = [
+  { product: "Vitamin C Serum 30ml",        units: 1847, days:  32, status: "warn"     as const },
+  { product: "Retinol Night Cream 50ml",    units: 3214, days:  78, status: "ok"       as const },
+  { product: "Hyaluronic Acid Moisturizer", units:  891, days:  27, status: "critical" as const },
+  { product: "Niacinamide Toner 200ml",     units: 2108, days:  79, status: "ok"       as const },
+  { product: "Collagen Eye Cream 15ml",     units: 4321, days: 242, status: "excess"   as const },
+];
+
+const SKILLS = [
   {
-    id: "amazon-data",
+    id: "data-reader",
     name: "AmazonDataReader",
-    desc: "Connects to your MCP database. Normalizes raw Seller Central exports into structured JSON every skill can read.",
+    desc: "Parses raw Seller Central exports into structured JSON metrics",
     color: "#6366f1",
-    icon: "🗄️",
+    steps: [
+      "Connecting to Seller Central feed...",
+      "Parsing 7-day window [Mar 31–Apr 6]...",
+      "Normalizing 5 ASIN records...",
+      "Structuring inventory health data...",
+      "Building PPC attribution map...",
+      "JSON payload ready ✓",
+    ],
+    duration: 2400,
   },
   {
     id: "brand-voice",
     name: "BrandVoice",
-    desc: "Single source of truth for tone, formatting rules, and brand terminology. Change it once — every downstream output updates.",
+    desc: "Applies TerraGlow's tone — professional, data-driven, action-oriented",
     color: "#8b5cf6",
-    icon: "✍️",
+    steps: [
+      "Loading TerraGlow brand profile...",
+      "Tone: professional + action-oriented...",
+      "Calibrating terminology rules...",
+      "Brand voice applied ✓",
+    ],
+    duration: 1600,
   },
   {
-    id: "output-formatter",
-    name: "OutputFormatter",
-    desc: "Routes final output to the right format: Markdown, PPTX JSON schema, HTML email, or plain text.",
-    color: "#a78bfa",
-    icon: "📤",
+    id: "report-gen",
+    name: "WeeklyReportGenerator",
+    desc: "Composes the final branded report with KPIs, insights, action items",
+    color: "#22d3ee",
+    steps: [
+      "Composing executive summary...",
+      "Rendering KPI dashboard...",
+      "Identifying top performer...",
+      "Prioritizing action items...",
+      "Writing ad insights...",
+      "Report finalized ✓",
+    ],
+    duration: 2800,
   },
 ];
 
-const COMPOSITE_SKILLS = [
-  {
-    id: "sales-analyst",
-    name: "SalesAnalyst",
-    desc: "Revenue trends, ASIN performance, period-over-period comparisons. Calls AmazonDataReader + BrandVoice.",
-    color: "#0ea5e9",
-    icon: "📈",
-    deps: ["amazon-data", "brand-voice"],
-  },
-  {
-    id: "ad-performance",
-    name: "AdPerformance",
-    desc: "ACOS, ROAS, keyword efficiency analysis. Surfaces spend waste and bid recommendations.",
-    color: "#06b6d4",
-    icon: "🎯",
-    deps: ["amazon-data", "brand-voice"],
-  },
-  {
-    id: "inventory-ops",
-    name: "InventoryOps",
-    desc: "Reorder forecasting, stockout risk scoring, IPI impact modeling. Alerts before the problem hits.",
-    color: "#0891b2",
-    icon: "📦",
-    deps: ["amazon-data", "output-formatter"],
-  },
-  {
-    id: "account-health",
-    name: "AccountHealth",
-    desc: "Monitors policy compliance, review velocity, listing suppression risk.",
-    color: "#0e7490",
-    icon: "🛡️",
-    deps: ["amazon-data", "brand-voice"],
-  },
-];
+// Skill 0: t=0→2400  |  Skill 1: t=2400→4000  |  Skill 2: t=4000→6800
+// Section reveal: t=2400 (s0), t=2800 (s1), t=4000 (s2), t=4400 (s3), t=6800 (s4), t=7200 (s5)
 
-const OUTPUT_SKILLS = [
-  {
-    id: "client-report",
-    name: "ClientReportGenerator",
-    desc: "Full monthly PDF-ready report. Pulls from all four department composites, formats in brand voice.",
-    color: "#10b981",
-    icon: "📋",
-    deps: ["sales-analyst", "ad-performance", "inventory-ops", "account-health"],
-  },
-  {
-    id: "pptx-builder",
-    name: "PowerPointBuilder",
-    desc: "Generates slide-ready JSON from department data. Drop into your template — 60-second deck.",
-    color: "#059669",
-    icon: "📊",
-    deps: ["sales-analyst", "ad-performance"],
-  },
-  {
-    id: "weekly-email",
-    name: "WeeklyEmailDigest",
-    desc: "Auto-sends Monday morning. 5 KPIs, 3 insights, 1 action item per client. No manual work.",
-    color: "#047857",
-    icon: "📧",
-    deps: ["sales-analyst", "inventory-ops"],
-  },
-  {
-    id: "cowork-router",
-    name: "CoworkTaskOrchestrator",
-    desc: "Routes any team message to the right skill. 'Pull last week's ad report for Client X' → AdPerformance → formatted output.",
-    color: "#065f46",
-    icon: "🤖",
-    deps: ["sales-analyst", "ad-performance", "inventory-ops", "account-health"],
-  },
-];
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
-// ─── Live Output Data ─────────────────────────────────────────────────────────
+function fmt$(n: number) {
+  return n >= 1000 ? `$${(n / 1000).toFixed(1)}K` : `$${n}`;
+}
 
-const OUTPUTS: Record<OutputKey, { label: string; skill: string; icon: string; content: string }> = {
-  "weekly-email": {
-    label: "Weekly Email Digest",
-    skill: "WeeklyEmailDigest",
-    icon: "📧",
-    content: `Subject: Atlas Weekly | Client: Horizon Supplements | Week of Apr 7
+const EASE = [0.22, 1, 0.36, 1] as [number, number, number, number];
 
-Hi Sarah,
+// ─── Left Panel ───────────────────────────────────────────────────────────────
 
-Here's your Amazon performance snapshot for the week.
+function OverviewTab() {
+  const stats = [
+    { label: "Total Revenue",   value: "$47,832", note: "↑ +12.3% WoW", noteColor: "#10b981", color: "#10b981" },
+    { label: "Units Sold",      value: "1,247",   note: "last 7 days",   noteColor: "#94a3b8",  color: "#22d3ee" },
+    { label: "Avg Order Value", value: "$38.36",  note: "↑ +2.1%",       noteColor: "#10b981", color: "#8b5cf6" },
+    { label: "Week-over-Week",  value: "+12.3%",  note: "revenue growth",noteColor: "#10b981", color: "#10b981" },
+  ];
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-2">
+        {stats.map((s) => (
+          <div
+            key={s.label}
+            className="rounded-lg border p-3"
+            style={{ borderColor: s.color + "30", background: s.color + "0d" }}
+          >
+            <div className="text-[9px] font-mono text-slate-500 uppercase tracking-widest mb-1.5">{s.label}</div>
+            <div className="font-mono text-lg font-bold leading-none" style={{ color: s.color }}>{s.value}</div>
+            <div className="text-[10px] mt-1.5" style={{ color: s.noteColor }}>{s.note}</div>
+          </div>
+        ))}
+      </div>
+      <div className="rounded-lg border border-slate-800 bg-slate-900/40 p-3">
+        <div className="flex items-center gap-2 mb-2">
+          <motion.div
+            className="w-1.5 h-1.5 rounded-full bg-amber-400"
+            animate={{ opacity: [1, 0.3, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          />
+          <span className="text-[9px] font-mono text-amber-400/70 uppercase tracking-widest">Live Data Source</span>
+        </div>
+        <div className="text-[10px] text-slate-500 space-y-0.5">
+          <div>Brand: <span className="text-slate-400">TerraGlow Skincare</span></div>
+          <div>Period: <span className="text-slate-400">Mar 31 – Apr 6, 2026</span></div>
+          <div>Marketplace: <span className="text-slate-400">Amazon US</span></div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
-📈 REVENUE
-$142,380 (+12.4% WoW) — driven by ASIN B09XKZP2R1 (Creatine 500g)
-Top performer: "Grass-Fed Whey 2lb" up 31% after bid adjustment
+function ASINsTab() {
+  return (
+    <div className="space-y-1">
+      <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-2 px-1 pb-1 border-b border-slate-800">
+        {["Product", "Rev", "Margin", "BSR"].map((h) => (
+          <div key={h} className="text-[9px] font-mono text-slate-600 uppercase tracking-wider text-right first:text-left">{h}</div>
+        ))}
+      </div>
+      {ASINS.map((a, i) => {
+        const marginColor = a.margin >= 65 ? "#10b981" : a.margin >= 60 ? "#f59e0b" : "#94a3b8";
+        return (
+          <motion.div
+            key={a.asin}
+            initial={{ opacity: 0, x: -8 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.3, delay: i * 0.05 }}
+            className="grid grid-cols-[1fr_auto_auto_auto] gap-x-2 px-1 py-1.5 rounded border border-transparent hover:border-slate-800 hover:bg-slate-900/30 transition-colors"
+          >
+            <div>
+              <div className="text-xs text-slate-300 truncate leading-tight">{a.product}</div>
+              <div className="text-[9px] font-mono text-slate-600 mt-0.5">{a.asin}</div>
+            </div>
+            <div className="text-right font-mono text-xs text-emerald-400 self-center">{fmt$(a.revenue)}</div>
+            <div className="text-right font-mono text-xs font-bold self-center" style={{ color: marginColor }}>{a.margin}%</div>
+            <div className="text-right font-mono text-[10px] text-slate-500 self-center">#{a.bsr.toLocaleString()}</div>
+          </motion.div>
+        );
+      })}
+      <div className="pt-1 text-[9px] font-mono text-slate-600 px-1">
+        Total: 1,247 units · Avg margin: 62% · 5 active ASINs
+      </div>
+    </div>
+  );
+}
 
-🎯 AD EFFICIENCY
-Blended ACOS: 18.2% (target: <22%) ✓
-ROAS: 4.8x — 3 keywords flagged for budget increase
-Wasted spend eliminated: $840 from 12 low-CTR terms
+function PPCTab() {
+  const primary = [
+    { label: "Ad Spend",   value: "$4,231",  sub: "this week",     color: "#f59e0b" },
+    { label: "Ad Revenue", value: "$14,809", sub: "attributed",    color: "#10b981" },
+    { label: "ACoS",       value: "28.6%",   sub: "target <30% ✓", color: "#10b981" },
+    { label: "TACoS",      value: "8.8%",    sub: "blended",       color: "#10b981" },
+    { label: "ROAS",       value: "3.50×",   sub: "return on ad",  color: "#10b981" },
+  ];
+  const secondary = [
+    { label: "Impressions", value: "892,431" },
+    { label: "Clicks",      value: "12,847"  },
+    { label: "CTR",         value: "1.44%",  sub: "avg 0.9%" },
+    { label: "CPC",         value: "$0.33",  sub: "↓ from $0.38" },
+  ];
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-3 gap-1.5">
+        {primary.map((m) => (
+          <div key={m.label} className="rounded-lg border border-slate-800 bg-slate-900/40 p-2">
+            <div className="text-[9px] font-mono text-slate-600 uppercase tracking-wider">{m.label}</div>
+            <div className="font-mono font-bold text-sm mt-1 leading-none" style={{ color: m.color }}>{m.value}</div>
+            <div className="text-[9px] mt-1" style={{ color: m.color + "80" }}>{m.sub}</div>
+          </div>
+        ))}
+      </div>
+      <div>
+        <div className="text-[9px] font-mono text-slate-600 uppercase tracking-wider mb-1.5">Click Metrics</div>
+        <div className="grid grid-cols-2 gap-1.5">
+          {secondary.map((m) => (
+            <div key={m.label} className="flex items-center justify-between rounded border border-slate-800/50 bg-slate-900/20 px-2.5 py-1.5">
+              <span className="text-[10px] text-slate-500">{m.label}</span>
+              <div className="text-right">
+                <div className="font-mono text-xs text-slate-300">{m.value}</div>
+                {m.sub && <div className="text-[9px] text-emerald-500/60">{m.sub}</div>}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
-📦 INVENTORY ALERT
-"Magnesium Glycinate 120ct" — 18 days of cover remaining
-Recommended reorder: 2,400 units by Apr 14
+function InventoryTab() {
+  const cfg = {
+    ok:       { color: "#10b981", bg: "rgba(16,185,129,0.08)",  border: "rgba(16,185,129,0.2)",  icon: "✓", label: "HEALTHY"  },
+    warn:     { color: "#f59e0b", bg: "rgba(245,158,11,0.08)",  border: "rgba(245,158,11,0.2)",  icon: "⚠", label: "REORDER"  },
+    critical: { color: "#ef4444", bg: "rgba(239,68,68,0.10)",   border: "rgba(239,68,68,0.25)",  icon: "●", label: "LOW STOCK"},
+    excess:   { color: "#f59e0b", bg: "rgba(245,158,11,0.06)",  border: "rgba(245,158,11,0.15)", icon: "⚠", label: "EXCESS"   },
+  };
+  return (
+    <div className="space-y-2">
+      {INVENTORY.map((item, i) => {
+        const c = cfg[item.status];
+        return (
+          <motion.div
+            key={item.product}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25, delay: i * 0.05 }}
+            className="rounded-lg border p-3 flex items-center justify-between gap-3"
+            style={{ borderColor: c.border, background: c.bg }}
+          >
+            <div className="flex-1 min-w-0">
+              <div className="text-xs text-slate-300 truncate">{item.product}</div>
+              <div className="text-[10px] font-mono text-slate-500 mt-0.5">
+                {item.units.toLocaleString()} units · <span style={{ color: item.days < 30 ? "#ef4444" : item.days > 120 ? "#f59e0b" : "#94a3b8" }}>{item.days} days</span>
+              </div>
+            </div>
+            <div className="text-[10px] font-mono font-bold flex-shrink-0 flex items-center gap-1" style={{ color: c.color }}>
+              <span>{c.icon}</span>
+              <span>{c.label}</span>
+            </div>
+          </motion.div>
+        );
+      })}
+      <div className="text-[9px] font-mono text-slate-600 pt-0.5">2 items need immediate PO action</div>
+    </div>
+  );
+}
 
-🛡️ ACCOUNT HEALTH
-No policy violations. 2 new reviews (4.8 avg this week).
+function DataPanel() {
+  const [tab, setTab] = useState<DataTab>("overview");
+  const tabs: { id: DataTab; label: string }[] = [
+    { id: "overview",   label: "Overview"   },
+    { id: "asins",      label: "ASINs"      },
+    { id: "ppc",        label: "PPC"        },
+    { id: "inventory",  label: "Inventory"  },
+  ];
 
-ACTION: Review the Magnesium reorder before Friday.
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex-shrink-0 px-5 pt-5 pb-0">
+        <div className="flex items-center gap-2 mb-2">
+          <div className="w-1.5 h-1.5 rounded-sm bg-amber-500/80" />
+          <span className="text-[9px] font-mono text-amber-400/60 uppercase tracking-widest">Input</span>
+        </div>
+        <div className="text-sm font-display font-semibold text-slate-200">Amazon Seller Central</div>
+        <div className="text-[11px] text-slate-500 mt-0.5">TerraGlow Skincare · Mar 31 – Apr 6, 2026</div>
+      </div>
 
-— Your Atlas AI System`,
-  },
-  "sales-report": {
-    label: "Sales Analysis Report",
-    skill: "SalesAnalyst",
-    icon: "📈",
-    content: `SALES ANALYSIS — Horizon Supplements
-Period: Mar 1–31, 2026 vs Feb 1–28, 2026
+      <div className="flex-shrink-0 flex gap-0.5 px-5 pt-3 pb-2">
+        {tabs.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className="px-2.5 py-1 text-[11px] rounded-md font-medium transition-all duration-200"
+            style={
+              tab === t.id
+                ? { background: "rgba(255,255,255,0.08)", color: "#e2e8f0" }
+                : { color: "#475569" }
+            }
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
 
-EXECUTIVE SUMMARY
-Total Revenue: $589,240 (+8.7% MoM)
-Units Sold: 14,820 (+6.2% MoM)
-Average Order Value: $39.76 (+2.3% MoM)
+      <div className="flex-shrink-0 mx-5 h-px bg-slate-800/60" />
 
-TOP PERFORMERS
-1. Creatine Monohydrate 500g — $124,500 (21.1% of revenue)
-   → +18.4% MoM. Capitalize on Q2 fitness season.
-2. Grass-Fed Whey Protein 2lb — $98,200 (16.7%)
-   → +11.2% MoM. Bundle opportunity with shakers.
-3. Omega-3 Fish Oil 120ct — $76,800 (13.0%)
-   → -2.1% MoM. Review listing content for refresh.
+      <div className="flex-1 overflow-y-auto px-5 pt-3 pb-5">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={tab}
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+          >
+            {tab === "overview"  && <OverviewTab  />}
+            {tab === "asins"     && <ASINsTab     />}
+            {tab === "ppc"       && <PPCTab       />}
+            {tab === "inventory" && <InventoryTab />}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
 
-UNDERPERFORMERS (flagged for review)
-• Electrolyte Powder Mix — $12,400 (-28% MoM)
-  Likely cause: price increase + competitor entry
-
-RECOMMENDED ACTIONS
-1. Increase Creatine ad budget 15% through May
-2. Launch Whey + Shaker bundle at $59.99
-3. Audit Electrolyte listing — consider promo`,
-  },
-  "ad-performance": {
-    label: "Ad Performance Report",
-    skill: "AdPerformance",
-    icon: "🎯",
-    content: `AD PERFORMANCE ANALYSIS — Horizon Supplements
-Period: Apr 1–6, 2026
-
-CAMPAIGN SUMMARY
-Total Ad Spend: $18,420
-Total Ad Revenue: $88,400
-Blended ACOS: 20.8% | ROAS: 4.8x
-
-HIGH-EFFICIENCY KEYWORDS (increase bids)
-"creatine monohydrate unflavored" — ACOS 11.2%, 840 clicks
-"grass fed whey protein" — ACOS 14.8%, 612 clicks
-"magnesium glycinate sleep" — ACOS 16.1%, 290 clicks
-
-WASTED SPEND (pause or reduce)
-"protein powder best" — $340 spend, 0 conversions
-"supplements amazon" — $290 spend, 1.2% CTR
-"creatine supplement" (broad) — $210 spend, ACOS 84%
-
-BUDGET REALLOCATION RECOMMENDATION
-Move $840 from low-performers to top 3 keywords.
-Projected ROAS improvement: 4.8x → 5.6x
-
-COMPETITOR ALERT
-New entrant "PureBulk" ranking #3 for "creatine 500g".
-Recommend defensive SB campaign.`,
-  },
-  "pptx-slide": {
-    label: "PowerPoint Slide Content",
-    skill: "PowerPointBuilder",
-    icon: "📊",
-    content: `SLIDE DECK JSON OUTPUT
-Client: Horizon Supplements | Monthly Business Review
-
-─── SLIDE 1: Executive Summary ───
-Title: "March 2026 Performance Overview"
-Headline stat: $589K Revenue (+8.7%)
-3 bullets:
-  • Record Creatine sales driven by Q2 fitness demand
-  • Ad efficiency at 20.8% ACOS — on target
-  • 1 inventory risk: Magnesium reorder needed by Apr 14
-
-─── SLIDE 2: Revenue Breakdown ───
-Chart type: Horizontal bar (by ASIN)
-Top 3 products + % of total revenue
-Callout: "Whey bundle opportunity = +$18K/mo potential"
-
-─── SLIDE 3: Advertising ───
-Chart type: ACOS trend line (12 weeks)
-KPIs: ROAS 4.8x | Spend $18.4K | Revenue $88.4K
-Action: Reallocate $840 from wasted spend
-
-─── SLIDE 4: Next 30 Days ───
-Priority 1: Creatine budget increase (+15%)
-Priority 2: Launch Whey + Shaker bundle
-Priority 3: Resolve Electrolyte listing decline`,
-  },
-  "inventory-alert": {
-    label: "Inventory Alert",
-    skill: "InventoryOps",
-    icon: "📦",
-    content: `INVENTORY OPERATIONS ALERT
-Generated: Apr 7, 2026 | Client: Horizon Supplements
-
-🔴 URGENT — 18 Days Cover Remaining
-ASIN: B08RVMZ91X | Magnesium Glycinate 120ct
-Current FBA Stock: 1,440 units
-Daily Velocity: 80 units/day
-Estimated Stockout: Apr 25, 2026
-
-RECOMMENDED ACTION
-Reorder Qty: 2,400 units (30-day cover + safety stock)
-Ship By: Apr 14 to clear Amazon receiving window
-Supplier Lead Time: 7–10 days → ORDER TODAY
-
-IPI IMPACT
-Current IPI Score: 524 (Good)
-Stockout risk to IPI: -40 to -60 points
-At-risk revenue if out of stock: ~$14,400 (18 days × $800/day)
-
-SECONDARY ALERTS
-⚠️  Omega-3 Fish Oil — 31 days cover (monitor)
-✅  Creatine 500g — 68 days cover (healthy)
-✅  Grass-Fed Whey — 45 days cover (healthy)
-
-Auto-alert sent to: sarah@horizonsupplements.com`,
-  },
-  "cowork-route": {
-    label: "Cowork Task Routing",
-    skill: "CoworkTaskOrchestrator",
-    icon: "🤖",
-    content: `COWORK TASK ORCHESTRATION LOG
-Channel: #amazon-ops | User: @jake
-
-───────────────────────────────────────────
-INPUT (Jake's message):
-"Can someone pull last week's ad performance
-for Horizon? Need ACOS and top keywords for
-our call at 2pm."
-───────────────────────────────────────────
-
-ORCHESTRATOR ANALYSIS
-Intent: Ad performance report
-Client: Horizon Supplements (matched from context)
-Period: Last 7 days (inferred from "last week")
-Output needed: ACOS + keyword table
-
-SKILL ROUTING
-→ AmazonDataReader.fetch(client="horizon",
-    period="7d", scope="advertising")
-→ AdPerformance.analyze(data, focus="acos,keywords")
-→ OutputFormatter.render(format="slack_message")
-
-EXECUTION TIME: 4.2 seconds
-
-OUTPUT POSTED TO #amazon-ops:
-"@jake — Horizon ad performance (Apr 1–6):
- ACOS: 20.8% ✓ | ROAS: 4.8x
- Top keyword: 'creatine monohydrate unflavored' (11.2% ACOS)
- Full report: [link] — ready for your 2pm call"`,
-  },
-};
-
-// ─── Hierarchy Tab ─────────────────────────────────────────────────────────
+// ─── Pipeline Panel ───────────────────────────────────────────────────────────
 
 function SkillCard({
-  name,
-  desc,
-  color,
-  icon,
-  delay = 0,
+  skill,
+  state,
+  currentStep,
+  index,
 }: {
-  name: string;
-  desc: string;
-  color: string;
-  icon: string;
-  delay?: number;
+  skill: typeof SKILLS[number];
+  state: SkillState;
+  currentStep: string;
+  index: number;
 }) {
+  const isActive   = state === "active";
+  const isComplete = state === "complete";
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay }}
-      className="rounded-lg border p-3 text-left hover:scale-[1.02] transition-transform duration-200 cursor-default"
-      style={{ borderColor: color + "40", backgroundColor: color + "10" }}
+      animate={{
+        borderColor: isActive   ? skill.color + "70"
+                   : isComplete ? "rgba(16,185,129,0.35)"
+                   : "rgba(255,255,255,0.06)",
+        background:  isActive   ? skill.color + "10"
+                   : isComplete ? "rgba(16,185,129,0.06)"
+                   : "rgba(255,255,255,0.02)",
+      }}
+      transition={{ duration: 0.35 }}
+      className="rounded-xl border p-3.5 relative overflow-hidden"
     >
-      <div className="flex items-center gap-2 mb-1">
-        <span className="text-base">{icon}</span>
-        <span className="font-mono text-xs font-semibold" style={{ color }}>
-          {name}
-        </span>
+      {/* Header row */}
+      <div className="flex items-start gap-2.5">
+        <div
+          className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-mono font-bold mt-0.5 transition-all duration-300"
+          style={{
+            background: isActive   ? skill.color + "25"
+                       : isComplete ? "rgba(16,185,129,0.2)"
+                       : "rgba(255,255,255,0.05)",
+            color: isActive   ? skill.color
+                 : isComplete ? "#10b981"
+                 : "#475569",
+          }}
+        >
+          {isComplete ? "✓" : index + 1}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div
+            className="font-mono text-xs font-semibold truncate transition-colors duration-300"
+            style={{
+              color: isActive   ? skill.color
+                   : isComplete ? "#10b981"
+                   : "#475569",
+            }}
+          >
+            {skill.name}
+          </div>
+          <div className="text-[10px] text-slate-600 mt-0.5 leading-relaxed">{skill.desc}</div>
+        </div>
       </div>
-      <p className="text-xs text-slate-400 leading-relaxed">{desc}</p>
+
+      {/* Active: progress + step text */}
+      {isActive && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-2.5 space-y-2">
+          <div className="h-0.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+            <motion.div
+              className="h-full rounded-full"
+              style={{ background: `linear-gradient(90deg, ${skill.color}, ${skill.color}cc)` }}
+              initial={{ width: "0%" }}
+              animate={{ width: "100%" }}
+              transition={{ duration: skill.duration / 1000, ease: "linear" }}
+            />
+          </div>
+          <div className="flex items-center gap-1.5">
+            <motion.div
+              className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+              style={{ background: skill.color }}
+              animate={{ opacity: [1, 0.3, 1] }}
+              transition={{ duration: 0.7, repeat: Infinity }}
+            />
+            <span className="text-[10px] font-mono" style={{ color: skill.color + "cc" }}>
+              {currentStep}
+            </span>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Complete state */}
+      {isComplete && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="mt-1.5 text-[10px] font-mono text-emerald-500/60"
+        >
+          ● complete
+        </motion.div>
+      )}
+
+      {/* Glow pulse when active */}
+      {isActive && (
+        <motion.div
+          className="absolute inset-0 rounded-xl pointer-events-none"
+          style={{ boxShadow: `inset 0 0 24px ${skill.color}18` }}
+          animate={{ opacity: [0.4, 1, 0.4] }}
+          transition={{ duration: 1.8, repeat: Infinity }}
+        />
+      )}
     </motion.div>
   );
 }
 
-function LayerLabel({ label, sublabel }: { label: string; sublabel: string }) {
+function PipelinePanel({
+  phase,
+  skillStates,
+  skillCurrentSteps,
+  onGenerate,
+}: {
+  phase: Phase;
+  skillStates: SkillState[];
+  skillCurrentSteps: string[];
+  onGenerate: () => void;
+}) {
   return (
-    <div className="text-right pr-4 pt-2 min-w-[120px]">
-      <div className="text-xs font-bold text-slate-300 uppercase tracking-widest">{label}</div>
-      <div className="text-[10px] text-slate-500 mt-0.5">{sublabel}</div>
-    </div>
-  );
-}
-
-function HierarchyTab() {
-  return (
-    <div className="space-y-6">
-      {/* Layer 1: Foundation */}
-      <div className="flex gap-4 items-start">
-        <LayerLabel label="Foundation" sublabel="Layer 1 — reference skills" />
-        <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {FOUNDATION_SKILLS.map((s, i) => (
-            <SkillCard key={s.id} {...s} delay={i * 0.08} />
-          ))}
+    <div className="flex flex-col h-full">
+      <div className="flex-shrink-0 px-5 pt-5 pb-0">
+        <div className="flex items-center gap-2 mb-2">
+          <div className="w-1.5 h-1.5 rounded-sm bg-purple-500/80" />
+          <span className="text-[9px] font-mono text-purple-400/60 uppercase tracking-widest">Pipeline</span>
         </div>
+        <div className="text-sm font-display font-semibold text-slate-200">Claude Skills</div>
+        <div className="text-[11px] text-slate-500 mt-0.5">3 skills · sequential</div>
       </div>
 
-      {/* Connector arrows */}
-      <div className="flex justify-center">
-        <div className="flex flex-col items-center gap-1">
-          <div className="text-slate-600 text-xs">composites inherit from foundation</div>
-          <div className="flex gap-6">
-            {[0, 1, 2].map((i) => (
-              <motion.div
-                key={i}
-                animate={{ y: [0, 6, 0] }}
-                transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.2 }}
-                className="text-slate-600 text-lg"
-              >
-                ↓
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </div>
+      <div className="flex-shrink-0 mx-5 mt-3 h-px bg-slate-800/60" />
 
-      {/* Layer 2: Department Composites */}
-      <div className="flex gap-4 items-start">
-        <LayerLabel label="Composites" sublabel="Layer 2 — department skills" />
-        <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {COMPOSITE_SKILLS.map((s, i) => (
-            <SkillCard key={s.id} {...s} delay={0.3 + i * 0.08} />
-          ))}
-        </div>
-      </div>
-
-      {/* Connector arrows */}
-      <div className="flex justify-center">
-        <div className="flex flex-col items-center gap-1">
-          <div className="text-slate-600 text-xs">output skills orchestrate composites</div>
-          <div className="flex gap-6">
-            {[0, 1, 2].map((i) => (
-              <motion.div
-                key={i}
-                animate={{ y: [0, 6, 0] }}
-                transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.3 }}
-                className="text-slate-600 text-lg"
-              >
-                ↓
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Layer 3: Output Skills */}
-      <div className="flex gap-4 items-start">
-        <LayerLabel label="Outputs" sublabel="Layer 3 — deliverable skills" />
-        <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {OUTPUT_SKILLS.map((s, i) => (
-            <SkillCard key={s.id} {...s} delay={0.6 + i * 0.08} />
-          ))}
-        </div>
-      </div>
-
-      {/* Reuse callout */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1 }}
-        className="rounded-lg border border-indigo-500/30 bg-indigo-500/5 p-4 text-sm text-slate-300"
-      >
-        <span className="font-semibold text-indigo-400">Why it matters: </span>
-        Update <span className="font-mono text-purple-400">BrandVoice</span> once and all 8 downstream
-        skills — every report, email, and slide — instantly reflect your new tone. No hunting through
-        prompts.
-      </motion.div>
-    </div>
-  );
-}
-
-// ─── Data Flow Tab ─────────────────────────────────────────────────────────
-
-const DATA_FLOW_STEPS = [
-  { label: "Amazon Seller Central", desc: "Raw sales, ad, inventory exports", color: "#f59e0b", icon: "🏪" },
-  { label: "MCP Database", desc: "Structured warehouse via Model Context Protocol", color: "#6366f1", icon: "🗄️" },
-  { label: "AmazonDataReader", desc: "Foundation skill normalizes data into typed JSON", color: "#8b5cf6", icon: "⚙️" },
-  { label: "Department Skills", desc: "SalesAnalyst, AdPerformance, InventoryOps pull normalized data", color: "#0ea5e9", icon: "🏢" },
-  { label: "Output Skills", desc: "ClientReport, PPTX, Email, Cowork compose final deliverables", color: "#10b981", icon: "📤" },
-  { label: "Client Deliverable", desc: "Report, slide deck, email, or Slack message — ready in seconds", color: "#f472b6", icon: "✅" },
-];
-
-function DataFlowTab() {
-  const [step, setStep] = useState(0);
-  const steps = DATA_FLOW_STEPS;
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setStep((s) => (s + 1) % DATA_FLOW_STEPS.length);
-    }, 2000);
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <div className="space-y-6">
-      {/* Flow diagram */}
-      <div className="relative">
-        <div className="flex flex-col gap-0">
-          {steps.map((s, i) => (
-            <div key={i} className="flex flex-col items-center">
-              <motion.div
-                animate={{
-                  scale: step === i ? 1.02 : 1,
-                  borderColor: step === i ? s.color : s.color + "30",
-                  backgroundColor: step === i ? s.color + "20" : s.color + "08",
-                }}
-                transition={{ duration: 0.3 }}
-                className="w-full max-w-lg mx-auto rounded-lg border p-3 flex items-center gap-3"
-              >
-                <span className="text-2xl">{s.icon}</span>
-                <div>
-                  <div className="font-semibold text-sm" style={{ color: step === i ? s.color : "#94a3b8" }}>
-                    {s.label}
-                  </div>
-                  <div className="text-xs text-slate-500">{s.desc}</div>
-                </div>
-                {step === i && (
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="ml-auto w-2 h-2 rounded-full"
-                    style={{ backgroundColor: s.color }}
-                  />
-                )}
-              </motion.div>
-              {i < steps.length - 1 && (
+      <div className="flex-1 overflow-y-auto px-5 pt-4 pb-3 space-y-2">
+        {SKILLS.map((skill, i) => (
+          <div key={skill.id}>
+            <SkillCard
+              skill={skill}
+              state={skillStates[i]}
+              currentStep={skillCurrentSteps[i]}
+              index={i}
+            />
+            {i < SKILLS.length - 1 && (
+              <div className="flex justify-center my-1.5">
                 <motion.div
-                  animate={{ opacity: step === i ? 1 : 0.3 }}
-                  className="text-slate-600 text-xl my-1"
+                  className="text-slate-700 text-sm leading-none select-none"
+                  animate={{
+                    opacity: skillStates[i] === "complete" ? [0.5, 1, 0.5] : 0.2,
+                    y:       skillStates[i] === "complete" ? [0, 3, 0] : 0,
+                  }}
+                  transition={{ duration: 1.2, repeat: Infinity }}
                 >
                   ↓
                 </motion.div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* MCP callout */}
-      <div className="rounded-lg border border-indigo-500/30 bg-indigo-500/5 p-4 space-y-2">
-        <div className="text-sm font-semibold text-indigo-400">MCP: Model Context Protocol</div>
-        <p className="text-xs text-slate-400 leading-relaxed">
-          MCP is Claude&apos;s native database connection protocol. Instead of pasting CSV data into
-          prompts, <span className="font-mono text-purple-400">AmazonDataReader</span> queries your
-          live database directly — structured, typed, always current. This is what makes the system
-          scale across 50+ clients without manual data prep.
-        </p>
-      </div>
-
-      {/* Cowork callout */}
-      <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-4 space-y-2">
-        <div className="text-sm font-semibold text-emerald-400">Cowork Task Orchestration</div>
-        <p className="text-xs text-slate-400 leading-relaxed">
-          Team members trigger the full pipeline with a single Slack message.{" "}
-          <span className="font-mono text-emerald-400">CoworkTaskOrchestrator</span> parses intent,
-          selects the right skill chain, and posts formatted output back to the channel — no dashboards,
-          no manual queries, no waiting.
-        </p>
-      </div>
-    </div>
-  );
-}
-
-// ─── Simulator Tab ─────────────────────────────────────────────────────────
-
-function SimulatorTab() {
-  const [selected, setSelected] = useState<OutputKey>("weekly-email");
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [displayedText, setDisplayedText] = useState("");
-  const [generated, setGenerated] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const output = OUTPUTS[selected];
-
-  function runSimulation() {
-    if (isGenerating) return;
-    setIsGenerating(true);
-    setDisplayedText("");
-    setGenerated(false);
-
-    const fullText = output.content;
-    let index = 0;
-
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    intervalRef.current = setInterval(() => {
-      index += 3;
-      setDisplayedText(fullText.slice(0, index));
-      if (index >= fullText.length) {
-        clearInterval(intervalRef.current!);
-        setIsGenerating(false);
-        setGenerated(true);
-      }
-    }, 16);
-  }
-
-  // Reset on tab change
-  useEffect(() => {
-    setDisplayedText("");
-    setIsGenerating(false);
-    setGenerated(false);
-    if (intervalRef.current) clearInterval(intervalRef.current);
-  }, [selected]);
-
-  const outputKeys = Object.keys(OUTPUTS) as OutputKey[];
-
-  return (
-    <div className="space-y-4">
-      {/* Selector */}
-      <div className="flex flex-wrap gap-2">
-        {outputKeys.map((key) => {
-          const o = OUTPUTS[key];
-          return (
-            <button
-              key={key}
-              onClick={() => setSelected(key)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-200"
-              style={
-                selected === key
-                  ? { borderColor: "#6366f1", backgroundColor: "#6366f110", color: "#a5b4fc" }
-                  : { borderColor: "#334155", backgroundColor: "transparent", color: "#64748b" }
-              }
-            >
-              <span>{o.icon}</span>
-              {o.label}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Skill badge */}
-      <div className="flex items-center gap-2">
-        <span className="text-xs text-slate-500">Skill:</span>
-        <span className="font-mono text-xs text-indigo-400 bg-indigo-500/10 border border-indigo-500/30 px-2 py-0.5 rounded">
-          {output.skill}
-        </span>
-      </div>
-
-      {/* Output panel */}
-      <div className="rounded-lg border border-slate-700 bg-slate-900 overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-2 border-b border-slate-700 bg-slate-800/50">
-          <div className="flex gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
-            <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/60" />
-            <div className="w-2.5 h-2.5 rounded-full bg-green-500/60" />
+              </div>
+            )}
           </div>
-          <span className="text-[10px] text-slate-500 font-mono">{output.label}</span>
-          {generated && (
-            <span className="text-[10px] text-emerald-400 font-mono">● generated</span>
-          )}
-        </div>
+        ))}
+      </div>
 
-        <div className="p-4 min-h-[240px] font-mono text-xs text-slate-300 leading-relaxed whitespace-pre-wrap">
-          {displayedText || (
-            <span className="text-slate-600 italic">
-              Select a skill output above, then click Generate to see it run.
-            </span>
-          )}
-          {isGenerating && (
-            <motion.span
-              animate={{ opacity: [1, 0] }}
-              transition={{ duration: 0.5, repeat: Infinity }}
-              className="inline-block w-1.5 h-3.5 bg-indigo-400 ml-0.5 align-middle"
+      <div className="flex-shrink-0 px-5 pb-5 pt-2 space-y-2">
+        <button
+          onClick={onGenerate}
+          disabled={phase === "running"}
+          className="w-full py-3 rounded-xl font-display font-semibold text-sm text-white transition-all duration-300 disabled:cursor-not-allowed relative overflow-hidden"
+          style={{
+            background:
+              phase === "running"
+                ? "linear-gradient(135deg, #4f46e5, #7c3aed)"
+                : phase === "complete"
+                ? "linear-gradient(135deg, #059669, #10b981)"
+                : "linear-gradient(135deg, #6366f1, #8b5cf6)",
+            boxShadow:
+              phase === "running"
+                ? "none"
+                : phase === "complete"
+                ? "0 0 24px rgba(16,185,129,0.3)"
+                : "0 0 28px rgba(139,92,246,0.4)",
+          }}
+        >
+          {phase === "running" && (
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
+              animate={{ x: ["-100%", "100%"] }}
+              transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
             />
           )}
-        </div>
+          <span className="relative">
+            {phase === "running"  ? "Processing…"
+           : phase === "complete" ? "↺ Regenerate"
+           :                        "Generate Report"}
+          </span>
+        </button>
+
+        <AnimatePresence>
+          {phase === "complete" && (
+            <motion.p
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="text-center text-[10px] font-mono text-emerald-500/60"
+            >
+              ● Generated in 6.8s · 3 skills executed
+            </motion.p>
+          )}
+        </AnimatePresence>
       </div>
-
-      {/* Generate button */}
-      <button
-        onClick={runSimulation}
-        disabled={isGenerating}
-        className="w-full py-2.5 rounded-lg font-semibold text-sm transition-all duration-200 disabled:opacity-50"
-        style={{
-          background: isGenerating
-            ? "linear-gradient(135deg, #4f46e5, #7c3aed)"
-            : "linear-gradient(135deg, #6366f1, #8b5cf6)",
-          color: "white",
-          boxShadow: isGenerating ? "none" : "0 0 20px #6366f130",
-        }}
-      >
-        {isGenerating ? "Generating…" : generated ? "Run Again" : `Generate ${output.label}`}
-      </button>
-
-      <p className="text-[10px] text-slate-600 text-center">
-        This simulates the output each skill produces. In production, data is pulled live from your MCP
-        database — no manual input required.
-      </p>
     </div>
   );
 }
 
-// ─── Main Page ──────────────────────────────────────────────────────────────
+// ─── Report Panel ─────────────────────────────────────────────────────────────
 
-export default function ClaudeSkillsArchitecturePage() {
-  const [activeTab, setActiveTab] = useState<Tab>("hierarchy");
-
-  const tabs: { id: Tab; label: string; icon: string }[] = [
-    { id: "hierarchy", label: "Skills Hierarchy", icon: "🏗️" },
-    { id: "dataflow", label: "Data Flow", icon: "🔄" },
-    { id: "simulator", label: "Live Simulator", icon: "▶️" },
-  ];
+function MetricBadge({
+  label,
+  value,
+  note,
+  type,
+}: {
+  label: string;
+  value: string;
+  note?: string;
+  type: "good" | "neutral" | "warn";
+}) {
+  const palette = {
+    good:    { color: "#10b981", border: "rgba(16,185,129,0.25)",  bg: "rgba(16,185,129,0.08)"  },
+    neutral: { color: "#22d3ee", border: "rgba(34,211,238,0.25)",  bg: "rgba(34,211,238,0.08)"  },
+    warn:    { color: "#f59e0b", border: "rgba(245,158,11,0.25)",  bg: "rgba(245,158,11,0.08)"  },
+  }[type];
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
-      {/* Header */}
-      <div className="border-b border-slate-800 bg-slate-900/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-start justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-lg">🧠</span>
-              <h1 className="font-bold text-lg">Claude Skills Architecture</h1>
-              <span className="text-[10px] font-mono bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 px-1.5 py-0.5 rounded">
-                DEMO
-              </span>
-            </div>
-            <p className="text-sm text-slate-400">
-              Amazon reporting system · Reusable skills · MCP database · Cowork orchestration
-            </p>
-          </div>
-          <div className="text-right hidden sm:block">
-            <div className="text-xs text-slate-500">built for</div>
-            <div className="text-xs font-mono text-slate-400">Claude AI Consultant proposal</div>
-          </div>
-        </div>
+    <div className="rounded-lg border p-2.5" style={{ borderColor: palette.border, background: palette.bg }}>
+      <div className="text-[9px] font-mono text-slate-500 uppercase tracking-wider mb-1">{label}</div>
+      <div className="font-mono font-bold text-base leading-none" style={{ color: palette.color }}>{value}</div>
+      {note && <div className="text-[9px] mt-1.5 leading-tight" style={{ color: palette.color + "90" }}>{note}</div>}
+    </div>
+  );
+}
+
+function ActionItem({
+  urgency,
+  text,
+}: {
+  urgency: "critical" | "warn" | "ok";
+  text: string;
+}) {
+  const cfg = {
+    critical: { icon: "🔴", border: "rgba(239,68,68,0.22)",   bg: "rgba(239,68,68,0.07)"   },
+    warn:     { icon: "⚠️", border: "rgba(245,158,11,0.22)",  bg: "rgba(245,158,11,0.06)"  },
+    ok:       { icon: "✅", border: "rgba(16,185,129,0.18)",  bg: "rgba(16,185,129,0.05)"  },
+  }[urgency];
+
+  return (
+    <div
+      className="flex items-start gap-2.5 rounded-lg border px-3 py-2.5"
+      style={{ borderColor: cfg.border, background: cfg.bg }}
+    >
+      <span className="flex-shrink-0 text-sm mt-0.5">{cfg.icon}</span>
+      <span className="text-xs text-slate-300 leading-relaxed">{text}</span>
+    </div>
+  );
+}
+
+function ReportPlaceholder() {
+  return (
+    <div className="flex flex-col items-center justify-center h-full min-h-[360px] px-8 text-center">
+      <div
+        className="w-14 h-14 rounded-2xl mb-5 flex items-center justify-center text-2xl"
+        style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.18)" }}
+      >
+        🌿
+      </div>
+      <div className="text-base font-display font-semibold text-slate-300 mb-1">TerraGlow Skincare</div>
+      <div className="text-sm text-slate-500">Weekly Performance Report</div>
+      <div className="text-xs text-slate-600 mt-1 mb-7">Week of March 31 – April 6, 2026</div>
+
+      {/* Ghost skeleton */}
+      <div className="w-full max-w-[260px] space-y-2 mb-6">
+        {[75, 100, 85, 60, 90, 70].map((w, i) => (
+          <div
+            key={i}
+            className="h-1.5 rounded-full bg-slate-800"
+            style={{ width: `${w}%`, marginLeft: i % 2 === 1 ? "auto" : "0", opacity: 0.5 - i * 0.05 }}
+          />
+        ))}
       </div>
 
-      {/* Tabs */}
-      <div className="max-w-4xl mx-auto px-4 pt-6">
-        <div className="flex gap-1 bg-slate-900 rounded-lg p-1 border border-slate-800 w-fit">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200"
-              style={
-                activeTab === tab.id
-                  ? { backgroundColor: "#6366f120", color: "#a5b4fc", borderColor: "#6366f140" }
-                  : { color: "#64748b" }
-              }
-            >
-              <span>{tab.icon}</span>
-              {tab.label}
-            </button>
-          ))}
-        </div>
+      <div className="text-[11px] text-slate-600 flex items-center gap-1.5">
+        <span>Click</span>
+        <span className="text-purple-400/60 font-mono">Generate Report</span>
+        <span>to run the pipeline</span>
       </div>
+    </div>
+  );
+}
 
-      {/* Content */}
-      <div className="max-w-4xl mx-auto px-4 py-6">
-        <AnimatePresence mode="wait">
+function ReportContent({ sections }: { sections: number }) {
+  const show = (n: number) => sections >= n;
+
+  return (
+    <div className="px-5 pt-5 pb-6 space-y-5">
+
+      {/* 0 → Report Header */}
+      <AnimatePresence>
+        {show(1) && (
           <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, y: 8 }}
+            key="header"
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.5, ease: EASE }}
           >
-            {activeTab === "hierarchy" && <HierarchyTab />}
-            {activeTab === "dataflow" && <DataFlowTab />}
-            {activeTab === "simulator" && <SimulatorTab />}
+            <div className="flex items-start justify-between gap-3 pb-4 border-b border-slate-800/60">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-sm">🌿</span>
+                  <span className="text-[9px] font-mono text-emerald-400/60 uppercase tracking-widest">TerraGlow Skincare</span>
+                </div>
+                <h2 className="text-lg font-display font-bold text-slate-100 leading-tight">
+                  Weekly Performance Report
+                </h2>
+                <div className="text-xs text-slate-500 mt-1">Week of March 31 – April 6, 2026</div>
+              </div>
+              <div className="flex-shrink-0 text-right">
+                <div className="text-[9px] font-mono text-slate-700">Generated by</div>
+                <div className="text-[10px] font-mono text-purple-400/50">Claude Skills ×3</div>
+              </div>
+            </div>
           </motion.div>
-        </AnimatePresence>
+        )}
+      </AnimatePresence>
+
+      {/* 1 → Executive Summary */}
+      <AnimatePresence>
+        {show(2) && (
+          <motion.div
+            key="exec"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: EASE }}
+          >
+            <div className="rounded-xl border border-slate-700/40 bg-slate-900/40 p-4">
+              <div className="text-[9px] font-mono text-slate-500 uppercase tracking-widest mb-2.5">
+                Executive Summary
+              </div>
+              <p className="text-sm text-slate-300 leading-relaxed">
+                Revenue grew{" "}
+                <span className="text-emerald-400 font-semibold">12.3% WoW to $47.8K</span> driven
+                by strong Vitamin C Serum performance (BSR improved to{" "}
+                <span className="text-emerald-400">#1,847</span>). Ad efficiency healthy — ACoS at{" "}
+                <span className="text-emerald-400">28.6%</span> against a 30% target. Two SKUs
+                require immediate inventory action to prevent stockouts.
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 2 → KPI Dashboard */}
+      <AnimatePresence>
+        {show(3) && (
+          <motion.div
+            key="kpis"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: EASE }}
+          >
+            <div>
+              <div className="text-[9px] font-mono text-slate-500 uppercase tracking-widest mb-2.5">
+                Key Metrics Dashboard
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <MetricBadge label="Revenue"    value="$47.8K" note="↑ +12.3% WoW" type="good"    />
+                <MetricBadge label="Units Sold" value="1,247"                       type="neutral" />
+                <MetricBadge label="ACoS"       value="28.6%"  note="target <30% ✓" type="good"    />
+                <MetricBadge label="TACoS"      value="8.8%"   note="healthy"        type="good"    />
+                <MetricBadge label="ROAS"       value="3.50×"                        type="good"    />
+                <MetricBadge label="Avg Order"  value="$38.36"                       type="neutral" />
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 3 → Top Performer */}
+      <AnimatePresence>
+        {show(4) && (
+          <motion.div
+            key="top"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: EASE }}
+          >
+            <div
+              className="rounded-xl border p-4"
+              style={{ borderColor: "rgba(245,158,11,0.22)", background: "rgba(245,158,11,0.06)" }}
+            >
+              <div className="flex items-center gap-2 mb-2.5">
+                <span className="text-sm">⭐</span>
+                <div className="text-[9px] font-mono text-amber-400/70 uppercase tracking-widest">
+                  Top Performer
+                </div>
+              </div>
+              <div className="text-sm font-display font-semibold text-slate-200 mb-1.5">
+                Vitamin C Serum 30ml
+              </div>
+              <div className="text-xs text-slate-400 leading-relaxed mb-3">
+                $16K revenue · 62% margin · BSR #1,847 · 412 units sold
+              </div>
+              <div
+                className="rounded-lg border px-3 py-2.5"
+                style={{ borderColor: "rgba(245,158,11,0.18)", background: "rgba(245,158,11,0.08)" }}
+              >
+                <div className="text-[9px] font-mono text-amber-400/60 mb-1">Recommendation</div>
+                <div className="text-xs text-slate-300 leading-relaxed">
+                  Increase daily ad budget from{" "}
+                  <span className="text-amber-400 font-semibold">$80 → $120</span> to capture BSR
+                  momentum. Current trajectory puts this in top 1,000 by month end.
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 4 → Action Items */}
+      <AnimatePresence>
+        {show(5) && (
+          <motion.div
+            key="actions"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: EASE }}
+          >
+            <div>
+              <div className="text-[9px] font-mono text-slate-500 uppercase tracking-widest mb-2.5">
+                Action Items
+              </div>
+              <div className="space-y-2">
+                <ActionItem urgency="critical" text="URGENT: Hyaluronic Acid Moisturizer at 27 days of stock. Submit PO for 2,000 units by Friday." />
+                <ActionItem urgency="warn"     text="Vitamin C Serum at 32 days. Submit PO for 3,000 units this week to prevent stockout." />
+                <ActionItem urgency="warn"     text="Collagen Eye Cream at 242 days excess. Recommend 15% coupon to accelerate sell-through." />
+                <ActionItem urgency="ok"       text="Retinol Night Cream and Niacinamide Toner inventory healthy. No action required." />
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 5 → Ad Performance Insights */}
+      <AnimatePresence>
+        {show(6) && (
+          <motion.div
+            key="ads"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: EASE }}
+          >
+            <div
+              className="rounded-xl border p-4"
+              style={{ borderColor: "rgba(34,211,238,0.2)", background: "rgba(34,211,238,0.05)" }}
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-sm">🎯</span>
+                <div className="text-[9px] font-mono text-cyan-400/70 uppercase tracking-widest">
+                  Ad Performance Insights
+                </div>
+              </div>
+              <div className="space-y-2.5 text-xs text-slate-400 leading-relaxed">
+                <div className="flex gap-2.5">
+                  <span className="text-emerald-400 flex-shrink-0 font-bold">↓</span>
+                  <span>
+                    <span className="text-slate-200">CPC dropped to $0.33</span> (was $0.38 last
+                    week) — bidding optimization is working.
+                  </span>
+                </div>
+                <div className="flex gap-2.5">
+                  <span className="text-emerald-400 flex-shrink-0 font-bold">↑</span>
+                  <span>
+                    <span className="text-slate-200">CTR at 1.44%</span> — above category average
+                    of 0.9%. Strong creative performance across top ASINs.
+                  </span>
+                </div>
+                <div className="flex gap-2.5">
+                  <span className="text-amber-400 flex-shrink-0 font-bold">→</span>
+                  <span>
+                    Recommend testing new{" "}
+                    <span className="text-slate-200">A+ content on Retinol Night Cream</span> —
+                    lowest CTR of the top 5 ASINs.
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Report footer */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4 }}
+              className="mt-5 pt-4 border-t border-slate-800/60 flex items-center justify-between"
+            >
+              <div className="text-[9px] font-mono text-slate-700">
+                Generated by Claude Skills · Apr 7, 2026
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/60" />
+                <span className="text-[9px] font-mono text-emerald-500/50">Report complete</span>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function ReportPanel({ sections }: { sections: number }) {
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex-shrink-0 px-5 pt-5 pb-0">
+        <div className="flex items-center gap-2 mb-2">
+          <div className="w-1.5 h-1.5 rounded-sm bg-cyan-500/80" />
+          <span className="text-[9px] font-mono text-cyan-400/60 uppercase tracking-widest">Output</span>
+        </div>
+        <div className="text-sm font-display font-semibold text-slate-200">Weekly Report</div>
+        <div className="text-[11px] text-slate-500 mt-0.5">Branded · structured · ready to send</div>
       </div>
 
-      {/* Footer */}
-      <div className="max-w-4xl mx-auto px-4 pb-12">
-        <div className="border-t border-slate-800 pt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs text-slate-600">
-          <div>
-            This architecture is based on real systems I built at{" "}
-            <span className="text-slate-500">Atlas</span> — managing $300K+/month in operations across
-            21 tools.
+      <div className="flex-shrink-0 mx-5 mt-3 h-px bg-slate-800/60" />
+
+      <div className="flex-1 overflow-y-auto">
+        {sections === 0 ? <ReportPlaceholder /> : <ReportContent sections={sections} />}
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
+
+export default function ClaudeSkillsArchitecturePage() {
+  const [phase,             setPhase]             = useState<Phase>("idle");
+  const [skillStates,       setSkillStates]       = useState<SkillState[]>(["idle", "idle", "idle"]);
+  const [skillCurrentSteps, setSkillCurrentSteps] = useState(["", "", ""]);
+  const [sections,          setSections]          = useState(0);
+  const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  function clearAll() {
+    timeoutsRef.current.forEach(clearTimeout);
+    timeoutsRef.current = [];
+  }
+
+  function handleGenerate() {
+    if (phase === "running") return;
+    clearAll();
+
+    setPhase("running");
+    setSkillStates(["active", "idle", "idle"]);
+    setSkillCurrentSteps([SKILLS[0].steps[0], "", ""]);
+    setSections(0);
+
+    function add(fn: () => void, delay: number) {
+      const t = setTimeout(fn, delay);
+      timeoutsRef.current.push(t);
+    }
+
+    // ── Skill 0: t=0 → 2400ms ──────────────────────────────────────────────
+    const s0Interval = 2400 / SKILLS[0].steps.length;
+    SKILLS[0].steps.forEach((step, i) => {
+      add(() => setSkillCurrentSteps((p) => [step, p[1], p[2]]), i * s0Interval);
+    });
+
+    // Skill 0 done → Skill 1 starts, reveal section 0 (report header)
+    add(() => {
+      setSkillStates(["complete", "active", "idle"]);
+      setSkillCurrentSteps((p) => [p[0], SKILLS[1].steps[0], p[2]]);
+      setSections(1);
+    }, 2400);
+
+    // Reveal exec summary
+    add(() => setSections(2), 2800);
+
+    // ── Skill 1: t=2400 → 4000ms ───────────────────────────────────────────
+    const s1Interval = 1600 / SKILLS[1].steps.length;
+    SKILLS[1].steps.forEach((step, i) => {
+      add(() => setSkillCurrentSteps((p) => [p[0], step, p[2]]), 2400 + i * s1Interval);
+    });
+
+    // Skill 1 done → Skill 2 starts, reveal KPI section
+    add(() => {
+      setSkillStates(["complete", "complete", "active"]);
+      setSkillCurrentSteps((p) => [p[0], p[1], SKILLS[2].steps[0]]);
+      setSections(3);
+    }, 4000);
+
+    // Reveal top performer
+    add(() => setSections(4), 4400);
+
+    // ── Skill 2: t=4000 → 6800ms ───────────────────────────────────────────
+    const s2Interval = 2800 / SKILLS[2].steps.length;
+    SKILLS[2].steps.forEach((step, i) => {
+      add(() => setSkillCurrentSteps((p) => [p[0], p[1], step]), 4000 + i * s2Interval);
+    });
+
+    // Skill 2 done → reveal action items
+    add(() => {
+      setSkillStates(["complete", "complete", "complete"]);
+      setSections(5);
+    }, 6800);
+
+    // Final section + complete
+    add(() => {
+      setSections(6);
+      setPhase("complete");
+    }, 7200);
+  }
+
+  return (
+    <div className="min-h-screen text-slate-100" style={{ background: "#07080d" }}>
+      {/* Ambient glow */}
+      <div
+        className="fixed inset-0 pointer-events-none overflow-hidden"
+        style={{ zIndex: 0 }}
+        aria-hidden
+      >
+        <div
+          className="absolute -top-40 left-1/4 w-[600px] h-[400px] rounded-full opacity-[0.035]"
+          style={{ background: "radial-gradient(circle, #8b5cf6 0%, transparent 70%)", filter: "blur(40px)" }}
+        />
+        <div
+          className="absolute top-1/2 -right-20 w-[400px] h-[600px] rounded-full opacity-[0.025]"
+          style={{ background: "radial-gradient(circle, #22d3ee 0%, transparent 70%)", filter: "blur(60px)" }}
+        />
+      </div>
+
+      {/* ── Header ──────────────────────────────────────────────────────────── */}
+      <header className="relative z-10 border-b border-slate-800/70 bg-slate-950/80 backdrop-blur-md sticky top-0">
+        <div className="max-w-[1440px] mx-auto px-5 py-3.5 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-sm flex-shrink-0"
+              style={{ background: "linear-gradient(135deg, #8b5cf6, #22d3ee)" }}
+            >
+              ⚡
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-display font-bold text-sm text-slate-100">
+                  Claude Skills Architecture
+                </span>
+                <span className="text-[9px] font-mono bg-purple-500/15 text-purple-400 border border-purple-500/20 px-1.5 py-0.5 rounded-full">
+                  LIVE DEMO
+                </span>
+              </div>
+              <p className="text-[10px] text-slate-600 mt-0.5 hidden sm:block">
+                Amazon Seller data → AmazonDataReader → BrandVoice → WeeklyReportGenerator → branded report
+              </p>
+            </div>
           </div>
           <a
             href="/"
-            className="text-indigo-500 hover:text-indigo-400 transition-colors font-medium shrink-0"
+            className="text-[11px] font-mono text-slate-700 hover:text-slate-400 transition-colors flex-shrink-0 hidden sm:block"
           >
-            ← Back to portfolio
+            ← portfolio
           </a>
         </div>
-      </div>
+      </header>
+
+      {/* ── 3-panel layout ──────────────────────────────────────────────────── */}
+      <main className="relative z-10 max-w-[1440px] mx-auto">
+
+        {/* Desktop: 3 columns, viewport height panels */}
+        <div
+          className="hidden lg:grid"
+          style={{
+            gridTemplateColumns: "1fr 290px 1fr",
+            height: "calc(100vh - 57px)",
+          }}
+        >
+          <div className="border-r border-slate-800/50 overflow-hidden">
+            <DataPanel />
+          </div>
+          <div className="border-r border-slate-800/50 overflow-hidden">
+            <PipelinePanel
+              phase={phase}
+              skillStates={skillStates}
+              skillCurrentSteps={skillCurrentSteps}
+              onGenerate={handleGenerate}
+            />
+          </div>
+          <div className="overflow-hidden">
+            <ReportPanel sections={sections} />
+          </div>
+        </div>
+
+        {/* Mobile: stacked */}
+        <div className="lg:hidden divide-y divide-slate-800/60">
+          <div className="px-4 py-6">
+            <DataPanel />
+          </div>
+          <div className="px-4 py-6">
+            <PipelinePanel
+              phase={phase}
+              skillStates={skillStates}
+              skillCurrentSteps={skillCurrentSteps}
+              onGenerate={handleGenerate}
+            />
+          </div>
+          <div className="px-4 py-6">
+            <ReportPanel sections={sections} />
+          </div>
+        </div>
+      </main>
     </div>
   );
 }
