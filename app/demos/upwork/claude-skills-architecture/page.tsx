@@ -3,739 +3,612 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+// ─── Types & Constants ───────────────────────────────────────────────────────
 
-type Tab = "hierarchy" | "dataflow" | "simulator";
+type Phase = "idle" | "step1" | "step2" | "step3" | "streaming" | "done";
+type InvStatus = "LOW" | "REORDER" | "OK" | "EXCESS";
 
-type OutputKey =
-  | "weekly-email"
-  | "sales-report"
-  | "ad-performance"
-  | "pptx-slide"
-  | "inventory-alert"
-  | "cowork-route";
-
-// ─── Skills Data ─────────────────────────────────────────────────────────────
-
-const FOUNDATION_SKILLS = [
-  {
-    id: "amazon-data",
-    name: "AmazonDataReader",
-    desc: "Connects to your MCP database. Normalizes raw Seller Central exports into structured JSON every skill can read.",
-    color: "#6366f1",
-    icon: "🗄️",
-  },
-  {
-    id: "brand-voice",
-    name: "BrandVoice",
-    desc: "Single source of truth for tone, formatting rules, and brand terminology. Change it once — every downstream output updates.",
-    color: "#8b5cf6",
-    icon: "✍️",
-  },
-  {
-    id: "output-formatter",
-    name: "OutputFormatter",
-    desc: "Routes final output to the right format: Markdown, PPTX JSON schema, HTML email, or plain text.",
-    color: "#a78bfa",
-    icon: "📤",
-  },
+const ASINS = [
+  { name: "Vitamin C Serum 30ml", revenue: 16200, margin: 62, bsr: 1847 },
+  { name: "Retinol Night Cream",   revenue: 11200, margin: 48, bsr: 3204 },
+  { name: "Hyaluronic Acid Serum", revenue: 8100,  margin: 51, bsr: 4821 },
+  { name: "Niacinamide Toner",     revenue: 6500,  margin: 44, bsr: 6230 },
+  { name: "Collagen Eye Cream",    revenue: 5700,  margin: 56, bsr: 7814 },
 ];
 
-const COMPOSITE_SKILLS = [
-  {
-    id: "sales-analyst",
-    name: "SalesAnalyst",
-    desc: "Revenue trends, ASIN performance, period-over-period comparisons. Calls AmazonDataReader + BrandVoice.",
-    color: "#0ea5e9",
-    icon: "📈",
-    deps: ["amazon-data", "brand-voice"],
-  },
-  {
-    id: "ad-performance",
-    name: "AdPerformance",
-    desc: "ACOS, ROAS, keyword efficiency analysis. Surfaces spend waste and bid recommendations.",
-    color: "#06b6d4",
-    icon: "🎯",
-    deps: ["amazon-data", "brand-voice"],
-  },
-  {
-    id: "inventory-ops",
-    name: "InventoryOps",
-    desc: "Reorder forecasting, stockout risk scoring, IPI impact modeling. Alerts before the problem hits.",
-    color: "#0891b2",
-    icon: "📦",
-    deps: ["amazon-data", "output-formatter"],
-  },
-  {
-    id: "account-health",
-    name: "AccountHealth",
-    desc: "Monitors policy compliance, review velocity, listing suppression risk.",
-    color: "#0e7490",
-    icon: "🛡️",
-    deps: ["amazon-data", "brand-voice"],
-  },
+const INVENTORY: { name: string; days: number; status: InvStatus }[] = [
+  { name: "Hyaluronic Acid Serum", days: 27,  status: "LOW" },
+  { name: "Vitamin C Serum 30ml",  days: 32,  status: "REORDER" },
+  { name: "Retinol Night Cream",   days: 61,  status: "OK" },
+  { name: "Niacinamide Toner",     days: 94,  status: "OK" },
+  { name: "Collagen Eye Cream",    days: 242, status: "EXCESS" },
 ];
 
-const OUTPUT_SKILLS = [
-  {
-    id: "client-report",
-    name: "ClientReportGenerator",
-    desc: "Full monthly PDF-ready report. Pulls from all four department composites, formats in brand voice.",
-    color: "#10b981",
-    icon: "📋",
-    deps: ["sales-analyst", "ad-performance", "inventory-ops", "account-health"],
-  },
-  {
-    id: "pptx-builder",
-    name: "PowerPointBuilder",
-    desc: "Generates slide-ready JSON from department data. Drop into your template — 60-second deck.",
-    color: "#059669",
-    icon: "📊",
-    deps: ["sales-analyst", "ad-performance"],
-  },
-  {
-    id: "weekly-email",
-    name: "WeeklyEmailDigest",
-    desc: "Auto-sends Monday morning. 5 KPIs, 3 insights, 1 action item per client. No manual work.",
-    color: "#047857",
-    icon: "📧",
-    deps: ["sales-analyst", "inventory-ops"],
-  },
-  {
-    id: "cowork-router",
-    name: "CoworkTaskOrchestrator",
-    desc: "Routes any team message to the right skill. 'Pull last week's ad report for Client X' → AdPerformance → formatted output.",
-    color: "#065f46",
-    icon: "🤖",
-    deps: ["sales-analyst", "ad-performance", "inventory-ops", "account-health"],
-  },
-];
-
-// ─── Live Output Data ─────────────────────────────────────────────────────────
-
-const OUTPUTS: Record<OutputKey, { label: string; skill: string; icon: string; content: string }> = {
-  "weekly-email": {
-    label: "Weekly Email Digest",
-    skill: "WeeklyEmailDigest",
-    icon: "📧",
-    content: `Subject: Atlas Weekly | Client: Horizon Supplements | Week of Apr 7
-
-Hi Sarah,
-
-Here's your Amazon performance snapshot for the week.
-
-📈 REVENUE
-$142,380 (+12.4% WoW) — driven by ASIN B09XKZP2R1 (Creatine 500g)
-Top performer: "Grass-Fed Whey 2lb" up 31% after bid adjustment
-
-🎯 AD EFFICIENCY
-Blended ACOS: 18.2% (target: <22%) ✓
-ROAS: 4.8x — 3 keywords flagged for budget increase
-Wasted spend eliminated: $840 from 12 low-CTR terms
-
-📦 INVENTORY ALERT
-"Magnesium Glycinate 120ct" — 18 days of cover remaining
-Recommended reorder: 2,400 units by Apr 14
-
-🛡️ ACCOUNT HEALTH
-No policy violations. 2 new reviews (4.8 avg this week).
-
-ACTION: Review the Magnesium reorder before Friday.
-
-— Your Atlas AI System`,
-  },
-  "sales-report": {
-    label: "Sales Analysis Report",
-    skill: "SalesAnalyst",
-    icon: "📈",
-    content: `SALES ANALYSIS — Horizon Supplements
-Period: Mar 1–31, 2026 vs Feb 1–28, 2026
-
-EXECUTIVE SUMMARY
-Total Revenue: $589,240 (+8.7% MoM)
-Units Sold: 14,820 (+6.2% MoM)
-Average Order Value: $39.76 (+2.3% MoM)
-
-TOP PERFORMERS
-1. Creatine Monohydrate 500g — $124,500 (21.1% of revenue)
-   → +18.4% MoM. Capitalize on Q2 fitness season.
-2. Grass-Fed Whey Protein 2lb — $98,200 (16.7%)
-   → +11.2% MoM. Bundle opportunity with shakers.
-3. Omega-3 Fish Oil 120ct — $76,800 (13.0%)
-   → -2.1% MoM. Review listing content for refresh.
-
-UNDERPERFORMERS (flagged for review)
-• Electrolyte Powder Mix — $12,400 (-28% MoM)
-  Likely cause: price increase + competitor entry
-
-RECOMMENDED ACTIONS
-1. Increase Creatine ad budget 15% through May
-2. Launch Whey + Shaker bundle at $59.99
-3. Audit Electrolyte listing — consider promo`,
-  },
-  "ad-performance": {
-    label: "Ad Performance Report",
-    skill: "AdPerformance",
-    icon: "🎯",
-    content: `AD PERFORMANCE ANALYSIS — Horizon Supplements
-Period: Apr 1–6, 2026
-
-CAMPAIGN SUMMARY
-Total Ad Spend: $18,420
-Total Ad Revenue: $88,400
-Blended ACOS: 20.8% | ROAS: 4.8x
-
-HIGH-EFFICIENCY KEYWORDS (increase bids)
-"creatine monohydrate unflavored" — ACOS 11.2%, 840 clicks
-"grass fed whey protein" — ACOS 14.8%, 612 clicks
-"magnesium glycinate sleep" — ACOS 16.1%, 290 clicks
-
-WASTED SPEND (pause or reduce)
-"protein powder best" — $340 spend, 0 conversions
-"supplements amazon" — $290 spend, 1.2% CTR
-"creatine supplement" (broad) — $210 spend, ACOS 84%
-
-BUDGET REALLOCATION RECOMMENDATION
-Move $840 from low-performers to top 3 keywords.
-Projected ROAS improvement: 4.8x → 5.6x
-
-COMPETITOR ALERT
-New entrant "PureBulk" ranking #3 for "creatine 500g".
-Recommend defensive SB campaign.`,
-  },
-  "pptx-slide": {
-    label: "PowerPoint Slide Content",
-    skill: "PowerPointBuilder",
-    icon: "📊",
-    content: `SLIDE DECK JSON OUTPUT
-Client: Horizon Supplements | Monthly Business Review
-
-─── SLIDE 1: Executive Summary ───
-Title: "March 2026 Performance Overview"
-Headline stat: $589K Revenue (+8.7%)
-3 bullets:
-  • Record Creatine sales driven by Q2 fitness demand
-  • Ad efficiency at 20.8% ACOS — on target
-  • 1 inventory risk: Magnesium reorder needed by Apr 14
-
-─── SLIDE 2: Revenue Breakdown ───
-Chart type: Horizontal bar (by ASIN)
-Top 3 products + % of total revenue
-Callout: "Whey bundle opportunity = +$18K/mo potential"
-
-─── SLIDE 3: Advertising ───
-Chart type: ACOS trend line (12 weeks)
-KPIs: ROAS 4.8x | Spend $18.4K | Revenue $88.4K
-Action: Reallocate $840 from wasted spend
-
-─── SLIDE 4: Next 30 Days ───
-Priority 1: Creatine budget increase (+15%)
-Priority 2: Launch Whey + Shaker bundle
-Priority 3: Resolve Electrolyte listing decline`,
-  },
-  "inventory-alert": {
-    label: "Inventory Alert",
-    skill: "InventoryOps",
-    icon: "📦",
-    content: `INVENTORY OPERATIONS ALERT
-Generated: Apr 7, 2026 | Client: Horizon Supplements
-
-🔴 URGENT — 18 Days Cover Remaining
-ASIN: B08RVMZ91X | Magnesium Glycinate 120ct
-Current FBA Stock: 1,440 units
-Daily Velocity: 80 units/day
-Estimated Stockout: Apr 25, 2026
-
-RECOMMENDED ACTION
-Reorder Qty: 2,400 units (30-day cover + safety stock)
-Ship By: Apr 14 to clear Amazon receiving window
-Supplier Lead Time: 7–10 days → ORDER TODAY
-
-IPI IMPACT
-Current IPI Score: 524 (Good)
-Stockout risk to IPI: -40 to -60 points
-At-risk revenue if out of stock: ~$14,400 (18 days × $800/day)
-
-SECONDARY ALERTS
-⚠️  Omega-3 Fish Oil — 31 days cover (monitor)
-✅  Creatine 500g — 68 days cover (healthy)
-✅  Grass-Fed Whey — 45 days cover (healthy)
-
-Auto-alert sent to: sarah@horizonsupplements.com`,
-  },
-  "cowork-route": {
-    label: "Cowork Task Routing",
-    skill: "CoworkTaskOrchestrator",
-    icon: "🤖",
-    content: `COWORK TASK ORCHESTRATION LOG
-Channel: #amazon-ops | User: @jake
-
-───────────────────────────────────────────
-INPUT (Jake's message):
-"Can someone pull last week's ad performance
-for Horizon? Need ACOS and top keywords for
-our call at 2pm."
-───────────────────────────────────────────
-
-ORCHESTRATOR ANALYSIS
-Intent: Ad performance report
-Client: Horizon Supplements (matched from context)
-Period: Last 7 days (inferred from "last week")
-Output needed: ACOS + keyword table
-
-SKILL ROUTING
-→ AmazonDataReader.fetch(client="horizon",
-    period="7d", scope="advertising")
-→ AdPerformance.analyze(data, focus="acos,keywords")
-→ OutputFormatter.render(format="slack_message")
-
-EXECUTION TIME: 4.2 seconds
-
-OUTPUT POSTED TO #amazon-ops:
-"@jake — Horizon ad performance (Apr 1–6):
- ACOS: 20.8% ✓ | ROAS: 4.8x
- Top keyword: 'creatine monohydrate unflavored' (11.2% ACOS)
- Full report: [link] — ready for your 2pm call"`,
-  },
+const INV_STYLE: Record<InvStatus, { dot: string; badge: string; label: string }> = {
+  LOW:     { dot: "bg-red-500",    badge: "bg-red-500/15 text-red-400 border-red-500/30",    label: "URGENT" },
+  REORDER: { dot: "bg-amber-400",  badge: "bg-amber-400/15 text-amber-400 border-amber-400/30", label: "REORDER" },
+  OK:      { dot: "bg-emerald-500",badge: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30", label: "OK" },
+  EXCESS:  { dot: "bg-sky-400",    badge: "bg-sky-400/15 text-sky-400 border-sky-400/30",    label: "EXCESS" },
 };
 
-// ─── Hierarchy Tab ─────────────────────────────────────────────────────────
-
-function SkillCard({
-  name,
-  desc,
-  color,
-  icon,
-  delay = 0,
-}: {
-  name: string;
-  desc: string;
-  color: string;
-  icon: string;
-  delay?: number;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay }}
-      className="rounded-lg border p-3 text-left hover:scale-[1.02] transition-transform duration-200 cursor-default"
-      style={{ borderColor: color + "40", backgroundColor: color + "10" }}
-    >
-      <div className="flex items-center gap-2 mb-1">
-        <span className="text-base">{icon}</span>
-        <span className="font-mono text-xs font-semibold" style={{ color }}>
-          {name}
-        </span>
-      </div>
-      <p className="text-xs text-slate-400 leading-relaxed">{desc}</p>
-    </motion.div>
-  );
-}
-
-function LayerLabel({ label, sublabel }: { label: string; sublabel: string }) {
-  return (
-    <div className="text-right pr-4 pt-2 min-w-[120px]">
-      <div className="text-xs font-bold text-slate-300 uppercase tracking-widest">{label}</div>
-      <div className="text-[10px] text-slate-500 mt-0.5">{sublabel}</div>
-    </div>
-  );
-}
-
-function HierarchyTab() {
-  return (
-    <div className="space-y-6">
-      {/* Layer 1: Foundation */}
-      <div className="flex gap-4 items-start">
-        <LayerLabel label="Foundation" sublabel="Layer 1 — reference skills" />
-        <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {FOUNDATION_SKILLS.map((s, i) => (
-            <SkillCard key={s.id} {...s} delay={i * 0.08} />
-          ))}
-        </div>
-      </div>
-
-      {/* Connector arrows */}
-      <div className="flex justify-center">
-        <div className="flex flex-col items-center gap-1">
-          <div className="text-slate-600 text-xs">composites inherit from foundation</div>
-          <div className="flex gap-6">
-            {[0, 1, 2].map((i) => (
-              <motion.div
-                key={i}
-                animate={{ y: [0, 6, 0] }}
-                transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.2 }}
-                className="text-slate-600 text-lg"
-              >
-                ↓
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Layer 2: Department Composites */}
-      <div className="flex gap-4 items-start">
-        <LayerLabel label="Composites" sublabel="Layer 2 — department skills" />
-        <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {COMPOSITE_SKILLS.map((s, i) => (
-            <SkillCard key={s.id} {...s} delay={0.3 + i * 0.08} />
-          ))}
-        </div>
-      </div>
-
-      {/* Connector arrows */}
-      <div className="flex justify-center">
-        <div className="flex flex-col items-center gap-1">
-          <div className="text-slate-600 text-xs">output skills orchestrate composites</div>
-          <div className="flex gap-6">
-            {[0, 1, 2].map((i) => (
-              <motion.div
-                key={i}
-                animate={{ y: [0, 6, 0] }}
-                transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.3 }}
-                className="text-slate-600 text-lg"
-              >
-                ↓
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Layer 3: Output Skills */}
-      <div className="flex gap-4 items-start">
-        <LayerLabel label="Outputs" sublabel="Layer 3 — deliverable skills" />
-        <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {OUTPUT_SKILLS.map((s, i) => (
-            <SkillCard key={s.id} {...s} delay={0.6 + i * 0.08} />
-          ))}
-        </div>
-      </div>
-
-      {/* Reuse callout */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1 }}
-        className="rounded-lg border border-indigo-500/30 bg-indigo-500/5 p-4 text-sm text-slate-300"
-      >
-        <span className="font-semibold text-indigo-400">Why it matters: </span>
-        Update <span className="font-mono text-purple-400">BrandVoice</span> once and all 8 downstream
-        skills — every report, email, and slide — instantly reflect your new tone. No hunting through
-        prompts.
-      </motion.div>
-    </div>
-  );
-}
-
-// ─── Data Flow Tab ─────────────────────────────────────────────────────────
-
-const DATA_FLOW_STEPS = [
-  { label: "Amazon Seller Central", desc: "Raw sales, ad, inventory exports", color: "#f59e0b", icon: "🏪" },
-  { label: "MCP Database", desc: "Structured warehouse via Model Context Protocol", color: "#6366f1", icon: "🗄️" },
-  { label: "AmazonDataReader", desc: "Foundation skill normalizes data into typed JSON", color: "#8b5cf6", icon: "⚙️" },
-  { label: "Department Skills", desc: "SalesAnalyst, AdPerformance, InventoryOps pull normalized data", color: "#0ea5e9", icon: "🏢" },
-  { label: "Output Skills", desc: "ClientReport, PPTX, Email, Cowork compose final deliverables", color: "#10b981", icon: "📤" },
-  { label: "Client Deliverable", desc: "Report, slide deck, email, or Slack message — ready in seconds", color: "#f472b6", icon: "✅" },
+const STEPS = [
+  {
+    id: "step1",
+    skill: "AmazonDataReader",
+    desc: "Connects to MCP database, normalizes Seller Central exports into typed JSON",
+    log: [
+      "→ Fetching sales data for Apr 1–7…",
+      "→ Parsing 1,247 order records…",
+      "→ Aggregating PPC campaign data…",
+      "✓ 5 ASINs normalized, inventory mapped",
+    ],
+  },
+  {
+    id: "step2",
+    skill: "BrandVoice",
+    desc: "Applies TerraGlow tone, terminology, and formatting rules",
+    log: [
+      "→ Loading TerraGlow brand profile…",
+      "→ Applying direct, data-first tone…",
+      "✓ Voice rules active across all outputs",
+    ],
+  },
+  {
+    id: "step3",
+    skill: "WeeklyReportGenerator",
+    desc: "Composes executive summary, KPIs, action items, and ad insights",
+    log: [
+      "→ Generating executive summary…",
+      "→ Scoring KPIs against targets…",
+      "→ Identifying action items by urgency…",
+      "→ Writing ad keyword recommendations…",
+      "✓ Report ready — 847 words",
+    ],
+  },
 ];
 
-function DataFlowTab() {
-  const [step, setStep] = useState(0);
-  const steps = DATA_FLOW_STEPS;
+const STEP_DURATION = [1800, 1200, 2000]; // ms per step
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setStep((s) => (s + 1) % DATA_FLOW_STEPS.length);
-    }, 2000);
-    return () => clearInterval(interval);
-  }, []);
+const REPORT = `WEEKLY PERFORMANCE REPORT
+TerraGlow Skincare  ·  Apr 1–7, 2026
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+EXECUTIVE SUMMARY
+
+Revenue climbed 12.3% week-over-week
+to $47,832 — outpacing last week's
+8.1% growth rate. ACoS held at 28.6%,
+inside your 30% target. Two SKUs need
+immediate attention: Hyaluronic Acid
+(27-day cover) is in the danger zone,
+and Collagen Eye Cream (242 days) is
+tying up working capital.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KPI SCORECARD
+
+  Revenue   $47,832  ↑12.3%  ● STRONG
+  Units     1,247    ↑9.1%   ● STRONG
+  AOV       $38.36   ↑2.9%   ● HEALTHY
+  ACoS      28.6%    <30%    ● ON TARGET
+  TACoS     8.8%     <10%    ● HEALTHY
+  ROAS      3.50×    >3.0×   ● STRONG
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TOP PERFORMER
+
+Vitamin C Serum 30ml
+$16,200 revenue · 62% margin · BSR #1,847
+
+At current ROAS of 3.50×, each extra
+$100 in spend returns $350. BSR is
+trending down — ranking momentum is
+building. Increase daily ad budget
+by 20% before the weekend window.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ACTION ITEMS
+
+🔴  URGENT — Hyaluronic Acid Serum
+    27 days of cover remaining.
+    Reorder 500 units by Apr 10 or
+    face stockout ~Apr 28. Out-of-
+    stock cost: ~$290/day in lost rev.
+
+⚠   Vitamin C Serum — Reorder now
+    32 days of cover. Order 800 units
+    to maintain a 60-day safety buffer.
+
+⚠   Collagen Eye Cream — Excess stock
+    242 days at risk. Run 15% coupon
+    + Vine enrollment. Cut ad spend
+    on this ASIN by 50% this week.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AD INSIGHTS
+
+CPC dropped 8.2% — less competition.
+Capture share now at lower cost.
+
+CTR 0.42% vs. category avg 0.31% ↑
+Impression share: 34% (room to grow)
+
+Scale: "vitamin c serum face"
+  ACoS 19.4% → raise bid +25%
+
+Pause: "retinol cream anti aging"
+  ACoS 61% → move budget to above
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Generated by WeeklyReportGenerator
+Claude Skills · TerraGlow workspace`;
+
+// ─── Utility: format numbers ─────────────────────────────────────────────────
+
+function fmt(n: number) {
+  return n.toLocaleString("en-US");
+}
+
+// ─── Left Panel ──────────────────────────────────────────────────────────────
+
+function LeftPanel() {
   return (
-    <div className="space-y-6">
-      {/* Flow diagram */}
-      <div className="relative">
-        <div className="flex flex-col gap-0">
-          {steps.map((s, i) => (
-            <div key={i} className="flex flex-col items-center">
-              <motion.div
-                animate={{
-                  scale: step === i ? 1.02 : 1,
-                  borderColor: step === i ? s.color : s.color + "30",
-                  backgroundColor: step === i ? s.color + "20" : s.color + "08",
-                }}
-                transition={{ duration: 0.3 }}
-                className="w-full max-w-lg mx-auto rounded-lg border p-3 flex items-center gap-3"
-              >
-                <span className="text-2xl">{s.icon}</span>
-                <div>
-                  <div className="font-semibold text-sm" style={{ color: step === i ? s.color : "#94a3b8" }}>
-                    {s.label}
-                  </div>
-                  <div className="text-xs text-slate-500">{s.desc}</div>
+    <div className="flex flex-col gap-3 h-full overflow-y-auto pr-1 scrollbar-hide">
+      {/* Client header */}
+      <div className="flex items-center gap-2">
+        <div className="w-7 h-7 rounded-md bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-xs">🌿</div>
+        <div>
+          <div className="text-[11px] font-semibold text-slate-200 leading-none">TerraGlow Skincare</div>
+          <div className="text-[10px] text-slate-500 mt-0.5">Amazon Seller · Week of Apr 1–7, 2026</div>
+        </div>
+        <div className="ml-auto text-[9px] font-mono text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 px-1.5 py-0.5 rounded">LIVE DATA</div>
+      </div>
+
+      {/* Revenue hero */}
+      <div className="rounded-lg border border-white/7 bg-white/[0.03] p-3">
+        <div className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Revenue</div>
+        <div className="flex items-baseline gap-2">
+          <span className="text-2xl font-bold font-mono text-slate-100">$47,832</span>
+          <span className="text-xs font-mono text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded">↑ 12.3% WoW</span>
+        </div>
+        <div className="flex gap-4 mt-2 pt-2 border-t border-white/5">
+          <div>
+            <div className="text-[9px] text-slate-600 uppercase tracking-wider">Units</div>
+            <div className="text-sm font-mono text-slate-300">1,247</div>
+          </div>
+          <div>
+            <div className="text-[9px] text-slate-600 uppercase tracking-wider">AOV</div>
+            <div className="text-sm font-mono text-slate-300">$38.36</div>
+          </div>
+          <div>
+            <div className="text-[9px] text-slate-600 uppercase tracking-wider">Orders</div>
+            <div className="text-sm font-mono text-slate-300">1,247</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Top ASINs */}
+      <div className="rounded-lg border border-white/7 bg-white/[0.03] p-3">
+        <div className="text-[10px] text-slate-500 uppercase tracking-widest mb-2">Top ASINs</div>
+        <div className="space-y-1.5">
+          {ASINS.map((a, i) => (
+            <div key={a.name} className="flex items-center gap-2 py-1 border-b border-white/5 last:border-0">
+              <span className="text-[10px] font-mono text-slate-600 w-3">{i + 1}</span>
+              <div className="flex-1 min-w-0">
+                <div className="text-[10px] text-slate-300 truncate">{a.name}</div>
+                <div className="flex gap-2 mt-0.5">
+                  <span className="text-[9px] font-mono text-slate-500">BSR #{fmt(a.bsr)}</span>
+                  <span className="text-[9px] font-mono text-emerald-500">{a.margin}% margin</span>
                 </div>
-                {step === i && (
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="ml-auto w-2 h-2 rounded-full"
-                    style={{ backgroundColor: s.color }}
-                  />
-                )}
-              </motion.div>
-              {i < steps.length - 1 && (
-                <motion.div
-                  animate={{ opacity: step === i ? 1 : 0.3 }}
-                  className="text-slate-600 text-xl my-1"
-                >
-                  ↓
-                </motion.div>
+              </div>
+              <div className="text-[10px] font-mono font-semibold text-slate-200">${(a.revenue / 1000).toFixed(1)}K</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* PPC */}
+      <div className="rounded-lg border border-white/7 bg-white/[0.03] p-3">
+        <div className="text-[10px] text-slate-500 uppercase tracking-widest mb-2">PPC Performance</div>
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            { label: "Ad Spend",   value: "$4,231",  sub: null },
+            { label: "Ad Revenue", value: "$14,809", sub: null },
+            { label: "ACoS",       value: "28.6%",   sub: "target <30%", ok: true },
+            { label: "ROAS",       value: "3.50×",   sub: "floor 3.0×",  ok: true },
+            { label: "TACoS",      value: "8.8%",    sub: "target <10%", ok: true },
+          ].map((m) => (
+            <div key={m.label} className="bg-white/[0.02] rounded p-2">
+              <div className="text-[9px] text-slate-600 uppercase tracking-wider">{m.label}</div>
+              <div className="text-sm font-mono font-semibold text-slate-200">{m.value}</div>
+              {m.sub && (
+                <div className={`text-[9px] ${m.ok ? "text-emerald-500" : "text-slate-600"}`}>{m.sub}</div>
               )}
             </div>
           ))}
         </div>
       </div>
 
-      {/* MCP callout */}
-      <div className="rounded-lg border border-indigo-500/30 bg-indigo-500/5 p-4 space-y-2">
-        <div className="text-sm font-semibold text-indigo-400">MCP: Model Context Protocol</div>
-        <p className="text-xs text-slate-400 leading-relaxed">
-          MCP is Claude&apos;s native database connection protocol. Instead of pasting CSV data into
-          prompts, <span className="font-mono text-purple-400">AmazonDataReader</span> queries your
-          live database directly — structured, typed, always current. This is what makes the system
-          scale across 50+ clients without manual data prep.
-        </p>
-      </div>
-
-      {/* Cowork callout */}
-      <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-4 space-y-2">
-        <div className="text-sm font-semibold text-emerald-400">Cowork Task Orchestration</div>
-        <p className="text-xs text-slate-400 leading-relaxed">
-          Team members trigger the full pipeline with a single Slack message.{" "}
-          <span className="font-mono text-emerald-400">CoworkTaskOrchestrator</span> parses intent,
-          selects the right skill chain, and posts formatted output back to the channel — no dashboards,
-          no manual queries, no waiting.
-        </p>
+      {/* Inventory */}
+      <div className="rounded-lg border border-white/7 bg-white/[0.03] p-3">
+        <div className="text-[10px] text-slate-500 uppercase tracking-widest mb-2">Inventory Status</div>
+        <div className="space-y-1.5">
+          {INVENTORY.map((inv) => {
+            const s = INV_STYLE[inv.status];
+            return (
+              <div key={inv.name} className="flex items-center gap-2">
+                <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${s.dot}`} />
+                <div className="flex-1 text-[10px] text-slate-400 truncate">{inv.name}</div>
+                <span className="text-[9px] font-mono text-slate-500">{inv.days}d</span>
+                <span className={`text-[8px] font-mono px-1.5 py-0.5 rounded border ${s.badge}`}>{s.label}</span>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
 }
 
-// ─── Simulator Tab ─────────────────────────────────────────────────────────
+// ─── Middle Pipeline Panel ───────────────────────────────────────────────────
 
-function SimulatorTab() {
-  const [selected, setSelected] = useState<OutputKey>("weekly-email");
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [displayedText, setDisplayedText] = useState("");
-  const [generated, setGenerated] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const output = OUTPUTS[selected];
-
-  function runSimulation() {
-    if (isGenerating) return;
-    setIsGenerating(true);
-    setDisplayedText("");
-    setGenerated(false);
-
-    const fullText = output.content;
-    let index = 0;
-
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    intervalRef.current = setInterval(() => {
-      index += 3;
-      setDisplayedText(fullText.slice(0, index));
-      if (index >= fullText.length) {
-        clearInterval(intervalRef.current!);
-        setIsGenerating(false);
-        setGenerated(true);
-      }
-    }, 16);
+function PipelinePanel({ phase, onGenerate }: { phase: Phase; onGenerate: () => void }) {
+  // After step1 completes, step2 starts — so during step2, step0 is done
+  function correctedState(i: number): "idle" | "active" | "done" {
+    const phaseOrder = ["idle", "step1", "step2", "step3", "streaming", "done"];
+    const current = phaseOrder.indexOf(phase);
+    const stepStart = i + 1; // step1=1, step2=2, step3=3
+    const stepEnd = i + 2;   // step1 ends when step2 starts
+    if (current >= stepEnd || (current >= 4)) return "done"; // streaming(4)/done(5)
+    if (current === stepStart) return "active";
+    return "idle";
   }
 
-  // Reset on tab change
-  useEffect(() => {
-    setDisplayedText("");
-    setIsGenerating(false);
-    setGenerated(false);
-    if (intervalRef.current) clearInterval(intervalRef.current);
-  }, [selected]);
-
-  const outputKeys = Object.keys(OUTPUTS) as OutputKey[];
-
   return (
-    <div className="space-y-4">
-      {/* Selector */}
-      <div className="flex flex-wrap gap-2">
-        {outputKeys.map((key) => {
-          const o = OUTPUTS[key];
-          return (
-            <button
-              key={key}
-              onClick={() => setSelected(key)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-200"
-              style={
-                selected === key
-                  ? { borderColor: "#6366f1", backgroundColor: "#6366f110", color: "#a5b4fc" }
-                  : { borderColor: "#334155", backgroundColor: "transparent", color: "#64748b" }
-              }
+    <div className="flex flex-col items-center gap-0 py-2">
+      {/* Label */}
+      <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-slate-600 mb-4">Claude Skills</div>
+
+      {STEPS.map((step, i) => {
+        const state = correctedState(i);
+        return (
+          <div key={step.id} className="flex flex-col items-center">
+            {/* Node */}
+            <motion.div
+              animate={{
+                boxShadow: state === "active"
+                  ? "0 0 0 1px rgba(99,102,241,0.6), 0 0 16px rgba(99,102,241,0.3)"
+                  : state === "done"
+                  ? "0 0 0 1px rgba(34,197,94,0.4)"
+                  : "0 0 0 1px rgba(255,255,255,0.07)",
+              }}
+              className="w-40 rounded-lg p-2.5 bg-slate-900 relative"
             >
-              <span>{o.icon}</span>
-              {o.label}
-            </button>
-          );
-        })}
-      </div>
+              {/* Status dot */}
+              <div className="flex items-center gap-1.5 mb-1">
+                <motion.div
+                  animate={{
+                    backgroundColor:
+                      state === "active" ? "#6366f1" :
+                      state === "done" ? "#22c55e" :
+                      "#334155",
+                    scale: state === "active" ? [1, 1.3, 1] : 1,
+                  }}
+                  transition={state === "active" ? { duration: 0.8, repeat: Infinity } : {}}
+                  className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                />
+                <span className={`text-[9px] font-mono font-semibold ${
+                  state === "active" ? "text-indigo-400" :
+                  state === "done" ? "text-emerald-400" :
+                  "text-slate-600"
+                }`}>
+                  {state === "done" ? "✓ DONE" : state === "active" ? "RUNNING" : "WAITING"}
+                </span>
+              </div>
 
-      {/* Skill badge */}
-      <div className="flex items-center gap-2">
-        <span className="text-xs text-slate-500">Skill:</span>
-        <span className="font-mono text-xs text-indigo-400 bg-indigo-500/10 border border-indigo-500/30 px-2 py-0.5 rounded">
-          {output.skill}
-        </span>
-      </div>
+              <div className={`text-[10px] font-semibold font-mono mb-0.5 ${
+                state === "idle" ? "text-slate-600" : "text-slate-200"
+              }`}>{step.skill}</div>
+              <div className="text-[9px] text-slate-600 leading-relaxed">{step.desc}</div>
 
-      {/* Output panel */}
-      <div className="rounded-lg border border-slate-700 bg-slate-900 overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-2 border-b border-slate-700 bg-slate-800/50">
-          <div className="flex gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
-            <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/60" />
-            <div className="w-2.5 h-2.5 rounded-full bg-green-500/60" />
+              {/* Log output */}
+              <AnimatePresence>
+                {state !== "idle" && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="mt-2 pt-2 border-t border-white/5 overflow-hidden"
+                  >
+                    {step.log.slice(0, state === "done" ? step.log.length : 2).map((line, li) => (
+                      <motion.div
+                        key={li}
+                        initial={{ opacity: 0, x: -4 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: li * 0.15 }}
+                        className={`text-[8px] font-mono leading-relaxed ${
+                          line.startsWith("✓") ? "text-emerald-500" : "text-slate-500"
+                        }`}
+                      >
+                        {line}
+                      </motion.div>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+
+            {/* Connector */}
+            {i < STEPS.length - 1 && (
+              <div className="flex flex-col items-center my-1 gap-0.5">
+                {[0, 1, 2].map((dot) => (
+                  <motion.div
+                    key={dot}
+                    animate={{
+                      backgroundColor:
+                        correctedState(i) === "done" ? "#22c55e" :
+                        correctedState(i) === "active" ? "#6366f1" :
+                        "#1e293b",
+                    }}
+                    className="w-0.5 h-1 rounded-full"
+                  />
+                ))}
+              </div>
+            )}
           </div>
-          <span className="text-[10px] text-slate-500 font-mono">{output.label}</span>
-          {generated && (
-            <span className="text-[10px] text-emerald-400 font-mono">● generated</span>
-          )}
-        </div>
-
-        <div className="p-4 min-h-[240px] font-mono text-xs text-slate-300 leading-relaxed whitespace-pre-wrap">
-          {displayedText || (
-            <span className="text-slate-600 italic">
-              Select a skill output above, then click Generate to see it run.
-            </span>
-          )}
-          {isGenerating && (
-            <motion.span
-              animate={{ opacity: [1, 0] }}
-              transition={{ duration: 0.5, repeat: Infinity }}
-              className="inline-block w-1.5 h-3.5 bg-indigo-400 ml-0.5 align-middle"
-            />
-          )}
-        </div>
-      </div>
+        );
+      })}
 
       {/* Generate button */}
-      <button
-        onClick={runSimulation}
-        disabled={isGenerating}
-        className="w-full py-2.5 rounded-lg font-semibold text-sm transition-all duration-200 disabled:opacity-50"
-        style={{
-          background: isGenerating
-            ? "linear-gradient(135deg, #4f46e5, #7c3aed)"
-            : "linear-gradient(135deg, #6366f1, #8b5cf6)",
-          color: "white",
-          boxShadow: isGenerating ? "none" : "0 0 20px #6366f130",
-        }}
-      >
-        {isGenerating ? "Generating…" : generated ? "Run Again" : `Generate ${output.label}`}
-      </button>
+      <div className="mt-5 w-full px-1">
+        <button
+          onClick={onGenerate}
+          disabled={phase !== "idle" && phase !== "done"}
+          className="w-full py-2 rounded-lg text-[11px] font-semibold transition-all duration-300 disabled:cursor-not-allowed"
+          style={
+            phase === "idle" || phase === "done"
+              ? {
+                  background: "linear-gradient(135deg, #4f46e5, #7c3aed)",
+                  color: "white",
+                  boxShadow: "0 0 16px rgba(99,102,241,0.25)",
+                }
+              : {
+                  background: "rgba(255,255,255,0.04)",
+                  color: "#475569",
+                  border: "1px solid rgba(255,255,255,0.07)",
+                }
+          }
+        >
+          {phase === "idle" ? "Generate Report →" :
+           phase === "done" ? "Regenerate →" :
+           phase === "streaming" ? "Writing…" :
+           "Running skills…"}
+        </button>
+      </div>
 
-      <p className="text-[10px] text-slate-600 text-center">
-        This simulates the output each skill produces. In production, data is pulled live from your MCP
-        database — no manual input required.
-      </p>
+      {/* Footer note */}
+      <div className="mt-3 text-[8px] text-slate-700 text-center leading-relaxed font-mono">
+        AmazonDataReader + BrandVoice<br />
+        + WeeklyReportGenerator
+      </div>
     </div>
   );
 }
 
-// ─── Main Page ──────────────────────────────────────────────────────────────
+// ─── Right Panel ─────────────────────────────────────────────────────────────
 
-export default function ClaudeSkillsArchitecturePage() {
-  const [activeTab, setActiveTab] = useState<Tab>("hierarchy");
-
-  const tabs: { id: Tab; label: string; icon: string }[] = [
-    { id: "hierarchy", label: "Skills Hierarchy", icon: "🏗️" },
-    { id: "dataflow", label: "Data Flow", icon: "🔄" },
-    { id: "simulator", label: "Live Simulator", icon: "▶️" },
-  ];
+function RightPanel({ phase, text }: { phase: Phase; text: string }) {
+  const isEmpty = phase === "idle";
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
+    <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="border-b border-slate-800 bg-slate-900/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-start justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-lg">🧠</span>
-              <h1 className="font-bold text-lg">Claude Skills Architecture</h1>
-              <span className="text-[10px] font-mono bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 px-1.5 py-0.5 rounded">
-                DEMO
-              </span>
-            </div>
-            <p className="text-sm text-slate-400">
-              Amazon reporting system · Reusable skills · MCP database · Cowork orchestration
-            </p>
-          </div>
-          <div className="text-right hidden sm:block">
-            <div className="text-xs text-slate-500">built for</div>
-            <div className="text-xs font-mono text-slate-400">Claude AI Consultant proposal</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="max-w-4xl mx-auto px-4 pt-6">
-        <div className="flex gap-1 bg-slate-900 rounded-lg p-1 border border-slate-800 w-fit">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200"
-              style={
-                activeTab === tab.id
-                  ? { backgroundColor: "#6366f120", color: "#a5b4fc", borderColor: "#6366f140" }
-                  : { color: "#64748b" }
-              }
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-[10px] text-slate-500 uppercase tracking-widest">Generated Report</div>
+        <AnimatePresence>
+          {phase === "done" && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="text-[9px] font-mono text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 px-2 py-0.5 rounded"
             >
-              <span>{tab.icon}</span>
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="max-w-4xl mx-auto px-4 py-6">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.2 }}
-          >
-            {activeTab === "hierarchy" && <HierarchyTab />}
-            {activeTab === "dataflow" && <DataFlowTab />}
-            {activeTab === "simulator" && <SimulatorTab />}
-          </motion.div>
+              ✓ Complete · 847 words
+            </motion.div>
+          )}
+          {(phase === "step3" || phase === "streaming") && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-[9px] font-mono text-indigo-400 bg-indigo-400/10 border border-indigo-400/20 px-2 py-0.5 rounded"
+            >
+              ● Writing
+            </motion.div>
+          )}
         </AnimatePresence>
       </div>
 
-      {/* Footer */}
-      <div className="max-w-4xl mx-auto px-4 pb-12">
-        <div className="border-t border-slate-800 pt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs text-slate-600">
-          <div>
-            This architecture is based on real systems I built at{" "}
-            <span className="text-slate-500">Atlas</span> — managing $300K+/month in operations across
-            21 tools.
+      {/* Terminal */}
+      <div className="flex-1 rounded-lg border border-white/7 bg-black/40 overflow-hidden flex flex-col">
+        {/* Traffic lights */}
+        <div className="flex items-center gap-1.5 px-3 py-2 border-b border-white/5 bg-white/[0.02]">
+          <div className="w-2 h-2 rounded-full bg-red-500/50" />
+          <div className="w-2 h-2 rounded-full bg-amber-400/50" />
+          <div className="w-2 h-2 rounded-full bg-emerald-500/50" />
+          <span className="ml-2 text-[9px] font-mono text-slate-600">weekly-report.txt</span>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 p-3 overflow-y-auto scrollbar-hide">
+          {isEmpty ? (
+            <div className="h-full flex flex-col items-center justify-center gap-3 opacity-30">
+              <div className="text-3xl">📄</div>
+              <div className="text-[10px] font-mono text-slate-500 text-center">
+                Click Generate Report<br />to run the skills pipeline
+              </div>
+            </div>
+          ) : (
+            <pre className="text-[10px] font-mono text-slate-300 leading-relaxed whitespace-pre-wrap break-words">
+              {text}
+              {(phase === "streaming") && (
+                <motion.span
+                  animate={{ opacity: [1, 0] }}
+                  transition={{ duration: 0.5, repeat: Infinity }}
+                  className="inline-block w-[6px] h-[11px] bg-indigo-400 ml-0.5 align-middle"
+                />
+              )}
+            </pre>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Page ───────────────────────────────────────────────────────────────
+
+export default function ClaudeSkillsArchitecturePage() {
+  const [phase, setPhase] = useState<Phase>("idle");
+  const [displayedText, setDisplayedText] = useState("");
+  const streamRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  function clearAll() {
+    if (streamRef.current) clearInterval(streamRef.current);
+    timeoutsRef.current.forEach(clearTimeout);
+    timeoutsRef.current = [];
+  }
+
+  function generate() {
+    clearAll();
+    setDisplayedText("");
+    setPhase("step1");
+
+    const t1 = setTimeout(() => {
+      setPhase("step2");
+      const t2 = setTimeout(() => {
+        setPhase("step3");
+        const t3 = setTimeout(() => {
+          setPhase("streaming");
+          let idx = 0;
+          streamRef.current = setInterval(() => {
+            idx += 4;
+            setDisplayedText(REPORT.slice(0, idx));
+            if (idx >= REPORT.length) {
+              clearInterval(streamRef.current!);
+              setDisplayedText(REPORT);
+              setPhase("done");
+            }
+          }, 18);
+        }, STEP_DURATION[2]);
+        timeoutsRef.current.push(t3);
+      }, STEP_DURATION[1]);
+      timeoutsRef.current.push(t2);
+    }, STEP_DURATION[0]);
+    timeoutsRef.current.push(t1);
+  }
+
+  useEffect(() => () => clearAll(), []);
+
+  return (
+    <div
+      className="min-h-screen text-slate-100 overflow-hidden"
+      style={{ background: "#08091a" }}
+    >
+      {/* Subtle dot-grid bg */}
+      <div
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)",
+          backgroundSize: "28px 28px",
+          maskImage: "radial-gradient(ellipse 80% 80% at 50% 50%, black, transparent)",
+        }}
+      />
+
+      {/* Page wrapper */}
+      <div className="relative z-10 flex flex-col min-h-screen max-w-7xl mx-auto px-4 py-6">
+
+        {/* Top bar */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-sm"
+              style={{ background: "linear-gradient(135deg, #4f46e5, #7c3aed)" }}
+            >
+              🧠
+            </div>
+            <div>
+              <div className="text-sm font-semibold text-slate-100">Claude Skills Architecture</div>
+              <div className="text-[10px] text-slate-500">Amazon data → AI skills → weekly report</div>
+            </div>
           </div>
-          <a
-            href="/"
-            className="text-indigo-500 hover:text-indigo-400 transition-colors font-medium shrink-0"
+          <div className="flex items-center gap-2">
+            <div className="text-[9px] font-mono text-slate-600">built for</div>
+            <div className="text-[9px] font-mono text-slate-400 border border-white/7 px-2 py-1 rounded">
+              Claude AI Consultant · Upwork
+            </div>
+            <a
+              href="/"
+              className="text-[10px] text-slate-600 hover:text-slate-400 transition-colors ml-2"
+            >
+              ← portfolio
+            </a>
+          </div>
+        </div>
+
+        {/* Column labels */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_180px_1fr] gap-4 mb-2">
+          <div className="text-[9px] font-mono uppercase tracking-widest text-slate-700">
+            01 · Raw Amazon Data
+          </div>
+          <div className="hidden lg:block text-[9px] font-mono uppercase tracking-widest text-slate-700 text-center">
+            02 · Skills Pipeline
+          </div>
+          <div className="hidden lg:block text-[9px] font-mono uppercase tracking-widest text-slate-700">
+            03 · Generated Output
+          </div>
+        </div>
+
+        {/* Three panels */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_180px_1fr] gap-4 flex-1">
+          {/* Left */}
+          <motion.div
+            initial={{ opacity: 0, x: -16 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+            className="min-h-0"
           >
-            ← Back to portfolio
-          </a>
+            <LeftPanel />
+          </motion.div>
+
+          {/* Middle */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="rounded-xl border border-white/7 bg-white/[0.02] px-3 py-4"
+          >
+            <PipelinePanel phase={phase} onGenerate={generate} />
+          </motion.div>
+
+          {/* Right */}
+          <motion.div
+            initial={{ opacity: 0, x: 16 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="min-h-[500px] lg:min-h-0"
+          >
+            <RightPanel phase={phase} text={displayedText} />
+          </motion.div>
+        </div>
+
+        {/* Footer */}
+        <div className="mt-6 flex items-center justify-between text-[9px] font-mono text-slate-700">
+          <div>
+            Architecture used in Atlas — 21-tool AI platform · $300K+/month operations
+          </div>
+          <div>
+            Session 1: Foundation · Session 2: Composites · Session 3: Outputs + Cowork
+          </div>
         </div>
       </div>
     </div>
